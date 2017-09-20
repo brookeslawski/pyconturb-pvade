@@ -13,7 +13,7 @@ def test_main_default():
     """
     # given
     k1, k2 = 0, 0
-    x1, x2 = [0, 0, 0], [0, 1, 0]
+    x1, x2 = [0, 0, 0], [0, 0, 1]
     freq = 1
     kwargs = {'v_hub': 1, 'l_c': 1}
     coh_theory = 5.637379774e-6
@@ -31,7 +31,7 @@ def test_main_badcohmodel():
     """
     # given
     k1, k2 = 0, 0
-    x1, x2 = [0, 0, 0], [1, 1, 1]
+    x1, x2 = [0, 0, 0], [0, 0, 1]
     freq = 1
 
     # when & then
@@ -45,7 +45,7 @@ def test_iec_badedition():
     """
     # given
     k1, k2 = 0, 0
-    x1, x2 = [0, 0, 0], [1, 1, 1]
+    x1, x2 = [0, 0, 0], [0, 0, 1]
     freq = 1
     kwargs = {'ed': 4, 'v_hub': 12, 'l_c': 340.2}
 
@@ -60,7 +60,7 @@ def test_iec_missingkwargs():
     """
     # given
     k1, k2 = 0, 0
-    x1, x2 = [0, 0, 0], [1, 1, 1]
+    x1, x2 = [0, 0, 0], [0, 0, 1]
     freq = 1
     kwargs = {'ed': 3, 'v_hub': 12}
 
@@ -75,7 +75,7 @@ def test_iec_value():
     """
     # given
     k1, k2 = 0, 0
-    x1, x2 = [0, 0, 0], [0, 1, 0]
+    x1, x2 = [0, 0, 0], [0, 0, 1]
     freq = 0.5
     kwargs = {'ed': 3, 'v_hub': 2, 'l_c': 3}
     coh_theory = 0.0479231144
@@ -89,7 +89,7 @@ def test_iec_value():
 
     # given
     k1, k2 = 2, 2
-    x1, x2 = [0, 0, 0], [0, 1, 0]
+    x1, x2 = [0, 0, 0], [0, 0, 1]
     freq = 1
     kwargs = {'ed': 3, 'v_hub': 2, 'l_c': 3}
     coh_theory = 0
