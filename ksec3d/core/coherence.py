@@ -3,9 +3,10 @@
 """
 
 import numpy as np
+import pandas as pd
 
 
-def get_coherence(k1, k2, x1, x2, freq,
+def get_coherence(spat_df, freq,
                   coh_model='iec', **kwargs):
     """KSEC-3D coherence function
 
@@ -14,36 +15,42 @@ def get_coherence(k1, k2, x1, x2, freq,
     Notes
     -----
     The spatial coordinate system is x positive to the right, z positive up,
-    and y positive downwind.
+    and y positive downwind. The turbulence components are indexed such that u
+    is 0, v is 1, and w is 2.
 
     Parameters
     ----------
-    k1 : int
-        Index of turbulence component at location 1. 0=u, 1=v, 2=w.
-    k2 : int
-        Index of turbulence component at location 2.
-    x1 : array_like
-        3D spatial location of point 1.
-    x2 : array_like
-        3D spatial location of point 2.
+    spat_df : pd.DataFrame
+        Pandas dataframe with spatial location/turbulence component information
+        that is necessary for coherence calculations. The dataframe must have
+        the following columns: k1 (turbulence component at point 1), x1, y1,
+        z1 (spatial coordinates of point 1), k2 (turbulence component at point
+        2), x2, y2, and z2 (spatial coordinates of point 2).
     freq : array_like
-        Frequencies for which to evaluate coherence.
+        Frequencies at which to evaluate coherence.
     coh_model : str, optional
         Coherence model to use. Default is IEC Ed. 3.
+    kwargs : dict
+        Keyword arguments for specified coherence model.
+
+    Returns
+    -------
+    coh_df : pd.DataFrame
+        Values of coherence model for specified spatial data and frequency.
     """
 
     if coh_model == 'iec':  # IEC coherence model
         if 'ed' not in kwargs.keys():  # add IEC ed to kwargs if not passed in
             kwargs['ed'] = 3
-        coh = get_iec_coherence(k1, k2, x1, x2, freq, **kwargs)
+        coh_df = get_iec_coherence(spat_df, freq, **kwargs)
 
     else:  # unknown coherence model
         raise ValueError(f'Coherence model "{coh_model}" not recognized.')
 
-    return coh
+    return coh_df
 
 
-def get_iec_coherence(k1, k2, x1, x2, freq,
+def get_iec_coherence(spat_df, freq,
                       **kwargs):
     """Exponential coherence specified in IEC 61400-1
 
@@ -54,33 +61,37 @@ def get_iec_coherence(k1, k2, x1, x2, freq,
 
     Parameters
     ----------
-    k1 : int
-        Index of turbulence component at location 1. 0=u, 1=v, 2=w.
-    k2 : int
-        Index of turbulence component at location 2.
-    x1 : array_like
-        3D spatial location of point 1.
-    x2 : array_like
-        3D spatial location of point 2.
+    spat_df : pd.DataFrame
+        Pandas dataframe with spatial location/turbulence component information
+        that is necessary for coherence calculations. The dataframe must have
+        the following columns: k1 (turbulence component at point 1), x1, y1,
+        z1 (spatial coordinates of point 1), k2 (turbulence component at point
+        2), x2, y2, and z2 (spatial coordinates of point 2).
     freq : array_like
         Frequencies for which to evaluate coherence.
     kwargs : dictionary
         Other variables specific to this coherence model.
-    """
 
-    x1 = np.asarray(x1)  # convert locations to arrays in case they weren't
-    x2 = np.asarray(x2)  # passed in as such
+    Returns
+    -------
+    coh_df : pd.DataFrame
+        Values of coherence model for specified spatial data and frequency.
+    """
 
     if kwargs['ed'] != 3:  # only allow edition 3
         raise ValueError('Only edition 3 is permitted.')
     if any([k not in kwargs.keys() for k in ['v_hub', 'l_c']]):  # check kwargs
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
-    r = np.sqrt((x1[0] - x2[0])**2 + (x1[2] - x2[2])**2)  # inter-pt distance
-    if (k1 == 0) and (k2 == 0):  # u at point 1 and u at point 2
-        coh = np.exp(-12 * np.sqrt((freq * r / kwargs['v_hub'])**2 +
-                                   (0.12 * r / kwargs['l_c'])**2))
-    else:  # any other combination of turbulence components is no coherence
-        coh = 0
+    freq = np.asarray(freq).reshape(1, -1)  # need this to be a row vector
+    coh_df = pd.DataFrame(0, index=np.arange(spat_df.shape[0]),
+                          columns=freq.reshape(-1))  # initialize to zeros
 
-    return coh
+    r = np.sqrt((spat_df.x1 - spat_df.x2)**2 +
+                (spat_df.z1 - spat_df.z2)**2).values.reshape(-1, 1)
+    mask = (spat_df.k1 == 0) & (spat_df.k2 == 0)
+    coh_df.loc[mask] = np.exp(-12 *
+                              np.sqrt((r / kwargs['v_hub'] * freq)**2 +
+                                      (0.12 * r / kwargs['l_c'])**2))[mask]
+
+    return coh_df
