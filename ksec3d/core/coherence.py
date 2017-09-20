@@ -76,7 +76,7 @@ def get_iec_coherence(k1, k2, x1, x2, freq,
     if any([k not in kwargs.keys() for k in ['v_hub', 'l_c']]):  # check kwargs
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
-    r = np.sqrt((x1[0] - x2[0])**2 + (x1[1] - x2[1])**2)  # inter-pt distance
+    r = np.sqrt((x1[0] - x2[0])**2 + (x1[2] - x2[2])**2)  # inter-pt distance
     if (k1 == 0) and (k2 == 0):  # u at point 1 and u at point 2
         coh = np.exp(-12 * np.sqrt((freq * r / kwargs['v_hub'])**2 +
                                    (0.12 * r / kwargs['l_c'])**2))
