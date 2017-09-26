@@ -109,3 +109,18 @@ def correlate_phasors(i_f, coh_df, unc_pha, n_s, ii, jj):
     cor_mat = np.linalg.cholesky(coh_mat)
     cor_pha = np.dot(cor_mat, np.exp(1j * unc_pha[:, i_f]))
     return cor_pha
+
+
+def gen_spat_grid(x, z):
+    """Generate spat_df (all turbulent components and grid defined by x and z)
+    """
+    xs, zs = np.meshgrid(x, z)
+    ks = np.array([0, 1, 2])
+    ys = np.zeros_like(xs)
+    spat_arr = np.vstack((np.tile(ks, xs.size),
+                          np.repeat(xs.reshape(-1), ks.size),
+                          np.repeat(ys.reshape(-1), ks.size),
+                          np.repeat(zs.reshape(-1), ks.size))).T
+    spat_df = pd.DataFrame(spat_arr,
+                           columns=['k', 'x', 'y', 'z'])
+    return spat_df

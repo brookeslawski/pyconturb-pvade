@@ -5,7 +5,7 @@
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.simulation import get_phasors
+from ksec3d.core.simulation import get_phasors, gen_spat_grid
 
 
 def test_get_phases():
@@ -38,3 +38,20 @@ def test_get_phases():
 
     # then
     assert (corr < coh_theory*(1 + tol)) & (corr > coh_theory*(1 - tol))
+
+
+def test_gen_spat_grid():
+    """Test the generation of the spatial grid
+    """
+    # given
+    x = [-10, 10]
+    z = [50, 70]
+    theo_size = (3 * len(x) * len(z)) * 4
+    first_row = [0, -10, 0, 50]
+
+    # when
+    spat_df = gen_spat_grid(x, z)
+
+    # then
+    assert spat_df.size == theo_size
+    assert all(spat_df.loc[0] == first_row)
