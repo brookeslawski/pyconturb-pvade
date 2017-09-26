@@ -37,6 +37,7 @@ def get_spectrum(spat_df, freq,
     -------
     spc_df : pd.DataFrame
         Values of spectral model for specified spatial data and frequency.
+        Index is point, column is frequency.
     """
 
     if spc_model == 'kaimal':  # Kaimal spectral model
@@ -70,6 +71,7 @@ def get_kaimal_spectrum(spat_df, freq,
     -------
     coh_df : pd.DataFrame
         Values of coherence model for specified spatial data and frequency.
+        Index is point, column is frequency.
     """
 
     if 'ed' not in kwargs.keys():
