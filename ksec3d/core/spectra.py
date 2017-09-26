@@ -8,7 +8,7 @@ import pandas as pd
 
 
 def get_spectrum(spat_df, freq,
-                 spc_model='iec', **kwargs):
+                 spc_model='kaimal', **kwargs):
     """Power spectrum for turbulent component and spatial location
 
     Calls spectral-model-specific subfunctions.
@@ -89,9 +89,9 @@ def get_kaimal_spectrum(spat_df, freq,
         42 * np.sign(spat_df.mask(spat_df.z <= 60, other=0).z)
     l_k = 8.1 * spat_df.mask(spat_df.k != 0, other=0).lambda_1 + \
         2.7 * spat_df.mask(spat_df.k != 1, other=0).lambda_1 + \
-        0.66 * spat_df.mask(spat_df.k != 2, other=0).lambda_1
-    sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)
-    tau = (l_k / kwargs['v_hub']).values.reshape(-1, 1)
+        0.66 * spat_df.mask(spat_df.k != 2, other=0).lambda_1  # length scale
+    sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
+    tau = (l_k / kwargs['v_hub']).values.reshape(-1, 1)  # L_k / U
 
     spc_df[:] = (sig**2) * (4 * tau) / \
         np.power(1. + 6 * tau * freq, 5. / 3.)  # Kaimal 1972
