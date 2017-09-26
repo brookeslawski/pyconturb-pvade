@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 
 
-def get_coherence(spat_df, freq,
+def get_coherence(pair_df, freq,
                   coh_model='iec', **kwargs):
     """KSEC-3D coherence function
 
@@ -20,7 +20,7 @@ def get_coherence(spat_df, freq,
 
     Parameters
     ----------
-    spat_df : pd.DataFrame
+    pair_df : pd.DataFrame
         Pandas dataframe with spatial location/turbulence component information
         that is necessary for coherence calculations. The dataframe must have
         the following columns: k1 (turbulence component at point 1), x1, y1,
@@ -42,7 +42,7 @@ def get_coherence(spat_df, freq,
     if coh_model == 'iec':  # IEC coherence model
         if 'ed' not in kwargs.keys():  # add IEC ed to kwargs if not passed in
             kwargs['ed'] = 3
-        coh_df = get_iec_coherence(spat_df, freq, **kwargs)
+        coh_df = get_iec_coherence(pair_df, freq, **kwargs)
 
     else:  # unknown coherence model
         raise ValueError(f'Coherence model "{coh_model}" not recognized.')
@@ -50,7 +50,7 @@ def get_coherence(spat_df, freq,
     return coh_df
 
 
-def get_iec_coherence(spat_df, freq,
+def get_iec_coherence(pair_df, freq,
                       **kwargs):
     """Exponential coherence specified in IEC 61400-1
 
@@ -61,7 +61,7 @@ def get_iec_coherence(spat_df, freq,
 
     Parameters
     ----------
-    spat_df : pd.DataFrame
+    pair_df : pd.DataFrame
         Pandas dataframe with spatial location/turbulence component information
         that is necessary for coherence calculations. The dataframe must have
         the following columns: k1 (turbulence component at point 1), x1, y1,
@@ -76,6 +76,7 @@ def get_iec_coherence(spat_df, freq,
     -------
     coh_df : pd.DataFrame
         Values of coherence model for specified spatial data and frequency.
+        Index is the pair of spatial components and columns are frequency.
     """
 
     if kwargs['ed'] != 3:  # only allow edition 3
@@ -84,12 +85,12 @@ def get_iec_coherence(spat_df, freq,
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
     freq = np.asarray(freq).reshape(1, -1)  # need this to be a row vector
-    coh_df = pd.DataFrame(0, index=np.arange(spat_df.shape[0]),
+    coh_df = pd.DataFrame(0, index=np.arange(pair_df.shape[0]),
                           columns=freq.reshape(-1))  # initialize to zeros
 
-    r = np.sqrt((spat_df.x1 - spat_df.x2)**2 +
-                (spat_df.z1 - spat_df.z2)**2).values.reshape(-1, 1)
-    mask = (spat_df.k1 == 0) & (spat_df.k2 == 0)
+    r = np.sqrt((pair_df.x1 - pair_df.x2)**2 +
+                (pair_df.z1 - pair_df.z2)**2).values.reshape(-1, 1)
+    mask = (pair_df.k1 == 0) & (pair_df.k2 == 0)
     coh_df.loc[mask] = np.exp(-12 *
                               np.sqrt((r / kwargs['v_hub'] * freq)**2 +
                                       (0.12 * r / kwargs['l_c'])**2))[mask]
