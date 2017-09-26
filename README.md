@@ -19,3 +19,7 @@ Follow these instructions to install the package:
 1. Clone the respository to your local machine
 2. Navigate to the newly cloned folder in your terminal/Anaconda Prompt
 3. `pip install -e .`
+ 
+## Examples
+
+There is an examples Jupyter notebook in the examples folder.
