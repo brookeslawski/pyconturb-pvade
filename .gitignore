@@ -10,3 +10,6 @@
 
 # cache from tests
 /.cache/
+
+# debugging file
+DELETEME.py
