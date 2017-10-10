@@ -8,10 +8,12 @@ import pandas as pd
 
 from .coherence import get_coherence
 from .spectra import get_spectrum
+from .wind_profiles import get_wsp_profile
 
 
 def gen_turb(spat_df,
-             coh_model='iec', spc_model='kaimal', T=600, dt=0.1,
+             coh_model='iec', spc_model='kaimal', wsp_profile='iec',
+             T=600, dt=0.1,
              seed=False, **kwargs):
     """Generate turbulence box
     """
@@ -36,9 +38,14 @@ def gen_turb(spat_df,
     # set zero-frequency component to zero
     turb_fft.iloc[:, 0] = 0
 
+    # convert to time domain, add mean wind speed profile
+    wsp_profile = get_wsp_profile(spat_df,
+                                  wsp_model=wsp_profile, **kwargs)
+    turb_t = np.fft.irfft(turb_fft, axis=1).T * n_t + wsp_profile
+
     # inverse fft and transpose to utilize pandas functions easier
     columns = (spat_df.k + '_' + spat_df.p_id).values
-    turb_df = pd.DataFrame(np.fft.irfft(turb_fft, axis=1).T,
+    turb_df = pd.DataFrame(turb_t,
                            columns=columns,
                            index=t)
 
