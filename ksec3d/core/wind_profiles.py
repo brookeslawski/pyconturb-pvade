@@ -3,9 +3,6 @@
 """
 import warnings
 
-import numpy as np
-import pandas as pd
-
 
 def get_wsp_profile(spat_df,
                     wsp_model='iec', **kwargs):
