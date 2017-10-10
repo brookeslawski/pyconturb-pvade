@@ -87,11 +87,12 @@ def get_kaimal_spectrum(spat_df, freq,
                           columns=freq.reshape(-1))  # initialize to zeros
 
     # assign/calculate intermediate variables
+    spat_df = spat_df.copy()
     spat_df['lambda_1'] = 0.7 * spat_df.mask(spat_df.z > 60, other=0).z + \
         42 * np.sign(spat_df.mask(spat_df.z <= 60, other=0).z)
-    l_k = 8.1 * spat_df.mask(spat_df.k != 0, other=0).lambda_1 + \
-        2.7 * spat_df.mask(spat_df.k != 1, other=0).lambda_1 + \
-        0.66 * spat_df.mask(spat_df.k != 2, other=0).lambda_1  # length scale
+    l_k = 8.1 * spat_df.mask(spat_df.k != 'u', other=0).lambda_1 + \
+        2.7 * spat_df.mask(spat_df.k != 'v', other=0).lambda_1 + \
+        0.66 * spat_df.mask(spat_df.k != 'w', other=0).lambda_1  # length scale
     sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
     tau = (l_k / kwargs['v_hub']).values.reshape(-1, 1)  # L_k / U
 

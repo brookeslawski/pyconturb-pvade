@@ -90,7 +90,7 @@ def get_iec_coherence(pair_df, freq,
 
     r = np.sqrt((pair_df.x1 - pair_df.x2)**2 +
                 (pair_df.z1 - pair_df.z2)**2).values.reshape(-1, 1)
-    mask = (pair_df.k1 == 0) & (pair_df.k2 == 0)
+    mask = (pair_df.k1 == 'u') & (pair_df.k2 == 'u')
     coh_df.loc[mask] = np.exp(-12 *
                               np.sqrt((r / kwargs['v_hub'] * freq)**2 +
                                       (0.12 * r / kwargs['l_c'])**2))[mask]

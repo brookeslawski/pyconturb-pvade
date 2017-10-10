@@ -37,8 +37,10 @@ def gen_turb(spat_df,
     turb_fft.iloc[:, 0] = 0
 
     # inverse fft and transpose to utilize pandas functions easier
-    turb_df = pd.DataFrame(np.fft.irfft(turb_fft, axis=1),
-                           columns=t).T
+    columns = (spat_df.k + '_' + spat_df.p_id).values
+    turb_df = pd.DataFrame(np.fft.irfft(turb_fft, axis=1).T,
+                           columns=columns,
+                           index=t)
 
     return turb_df
 
@@ -115,12 +117,15 @@ def gen_spat_grid(x, z):
     """Generate spat_df (all turbulent components and grid defined by x and z)
     """
     xs, zs = np.meshgrid(x, z)
-    ks = np.array([0, 1, 2])
+    ks = np.array(['u', 'v', 'w'])
     ys = np.zeros_like(xs)
+    ps = [f'p{i:.0f}' for i in np.arange(xs.size)]
     spat_arr = np.vstack((np.tile(ks, xs.size),
+                          np.repeat(ps, ks.size),
                           np.repeat(xs.reshape(-1), ks.size),
                           np.repeat(ys.reshape(-1), ks.size),
                           np.repeat(zs.reshape(-1), ks.size))).T
     spat_df = pd.DataFrame(spat_arr,
-                           columns=['k', 'x', 'y', 'z'])
+                           columns=['k', 'p_id', 'x', 'y', 'z'])
+    spat_df[['x', 'y', 'z']] = spat_df[['x', 'y', 'z']].astype(float)
     return spat_df
