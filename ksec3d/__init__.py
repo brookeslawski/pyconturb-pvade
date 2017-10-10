@@ -1,2 +1,2 @@
 
-from .core.simulation import gen_turb
+from .simulation import gen_turb
