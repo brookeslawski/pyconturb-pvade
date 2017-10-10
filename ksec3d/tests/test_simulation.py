@@ -5,7 +5,8 @@
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.simulation import get_phasors
+from ksec3d.core.simulation import get_phasors, gen_turb
+from ksec3d.core.helpers import gen_spat_grid
 
 
 def test_get_phases():
@@ -38,3 +39,18 @@ def test_get_phases():
 
     # then
     assert (corr < coh_theory*(1 + tol)) & (corr > coh_theory*(1 - tol))
+
+
+def test_iec_turb_std_dev():
+    """test that iec turbulence has correct generated std deviation
+    """
+    x, z = 0, 90  # given
+    spat_df = gen_spat_grid(x, z)
+    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': z}
+    coh_model, T, dt = 'iec', 8, 4
+    sig_theo = np.array([1.834, 1.4672, 0.917])
+    turb_df = gen_turb(spat_df,
+                       coh_model=coh_model, spc_model='kaimal', T=T, dt=dt,
+                       **kwargs)  # when
+    np.testing.assert_allclose(sig_theo, turb_df.std(axis=0),
+                               rtol=1e-3)
