@@ -88,7 +88,7 @@ def get_iec_coherence(pair_df, freq,
     coh_df = pd.DataFrame(0, index=np.arange(pair_df.shape[0]),
                           columns=freq.reshape(-1))  # initialize to zeros
 
-    r = np.sqrt((pair_df.x1 - pair_df.x2)**2 +
+    r = np.sqrt((pair_df.y1 - pair_df.y2)**2 +
                 (pair_df.z1 - pair_df.z2)**2).values.reshape(-1, 1)
     mask = (pair_df.k1 == 'u') & (pair_df.k2 == 'u')
     coh_df.loc[mask] = np.exp(-12 *
