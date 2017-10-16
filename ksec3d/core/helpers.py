@@ -20,9 +20,9 @@ def gen_spat_grid(y, z):
     ps = [f'p{i:.0f}' for i in np.arange(xs.size)]
     spat_arr = np.vstack((np.tile(ks, xs.size),
                           np.repeat(ps, ks.size),
-                          np.repeat(xs.reshape(-1), ks.size),
-                          np.repeat(ys.reshape(-1), ks.size),
-                          np.repeat(zs.reshape(-1), ks.size))).T
+                          np.repeat(xs.T.reshape(-1), ks.size),
+                          np.repeat(ys.T.reshape(-1), ks.size),
+                          np.repeat(zs.T.reshape(-1), ks.size))).T
     spat_df = pd.DataFrame(spat_arr,
                            columns=['k', 'p_id', 'x', 'y', 'z'])
     spat_df[['x', 'y', 'z']] = spat_df[['x', 'y', 'z']].astype(float)
