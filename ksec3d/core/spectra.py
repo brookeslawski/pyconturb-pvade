@@ -6,6 +6,8 @@ import warnings
 import numpy as np
 import pandas as pd
 
+from .helpers import get_iec_sigk
+
 
 def get_spectrum(spat_df, freq,
                  spc_model='kaimal', **kwargs):
@@ -93,10 +95,10 @@ def get_kaimal_spectrum(spat_df, freq,
     l_k = 8.1 * spat_df.mask(spat_df.k != 'u', other=0).lambda_1 + \
         2.7 * spat_df.mask(spat_df.k != 'v', other=0).lambda_1 + \
         0.66 * spat_df.mask(spat_df.k != 'w', other=0).lambda_1  # length scale
-    sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
+    sig_k = get_iec_sigk(spat_df, **kwargs).reshape(-1, 1)
     tau = (l_k / kwargs['v_hub']).values.reshape(-1, 1)  # L_k / U
 
-    spc_df[:] = (sig**2) * (4 * tau) / \
+    spc_df[:] = (sig_k**2) * (4 * tau) / \
         np.power(1. + 6 * tau * freq, 5. / 3.)  # Kaimal 1972
 
     return spc_df

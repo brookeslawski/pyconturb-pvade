@@ -19,7 +19,8 @@ def get_wsp_profile(spat_df,
         if any([k not in kwargs.keys() for k in ['v_hub', 'z_hub']]):
             raise ValueError('Missing keyword arguments for IEC mean ' +
                              'wind profile model')
-        wsp_df = kwargs['v_hub'] * (spat_df.z / kwargs['z_hub']) ** alpha
+        wsp_df = kwargs['v_hub'] * (spat_df.mask(spat_df.k != 'u', other=0).z
+                                    / kwargs['z_hub']) ** alpha
 
     else:  # unknown coherence model
         raise ValueError(f'Wind profile model "{wsp_model}" not recognized.')

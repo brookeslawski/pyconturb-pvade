@@ -27,3 +27,12 @@ def gen_spat_grid(y, z):
                            columns=['k', 'p_id', 'x', 'y', 'z'])
     spat_df[['x', 'y', 'z']] = spat_df[['x', 'y', 'z']].astype(float)
     return spat_df
+
+
+def get_iec_sigk(spat_df, **kwargs):
+    """get sig_k for iec
+    """
+    sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
+    sig_k = sig * (1.0 * (spat_df.k == 'u') + 0.8 * (spat_df.k == 'v') +
+                   0.5 * (spat_df.k == 'w')).values
+    return sig_k
