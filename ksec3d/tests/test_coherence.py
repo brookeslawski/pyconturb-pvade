@@ -6,12 +6,15 @@ Author
 Jenni Rinker
 rink@dtu.dk
 """
+import itertools
 
 import numpy as np
 import pandas as pd
-from py.test import raises
+import pytest
 
 from ksec3d.core.coherence import get_coherence, get_iec_coherence
+from ksec3d.core.helpers import gen_spat_grid, spat_to_pair_df
+from ksec3d.core.simulation import gen_turb
 
 
 def test_main_default():
@@ -43,7 +46,7 @@ def test_main_badcohmodel():
     freq = 1
 
     # when & then
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         get_coherence(spat_df, freq,
                       coh_model='garbage')
 
@@ -59,7 +62,7 @@ def test_iec_badedition():
     kwargs = {'ed': 4, 'v_hub': 12, 'l_c': 340.2}
 
     # when & then
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         get_iec_coherence(spat_df, freq,
                           **kwargs)
 
@@ -75,7 +78,7 @@ def test_iec_missingkwargs():
     kwargs = {'ed': 3, 'v_hub': 12}
 
     # when & then
-    with raises(ValueError):
+    with pytest.raises(ValueError):
         get_iec_coherence(spat_df, freq,
                           **kwargs)
 
@@ -112,3 +115,40 @@ def test_iec_value():
 
     # then
     assert np.isclose(coh, coh_theory)
+
+
+@pytest.mark.long  # mark this as a slow test
+def test_verify_iec_sim_coherence():
+    """check that the simulated box has the right coherence
+    """
+    # given
+    y, z = [0], [70, 80]
+    spat_df = gen_spat_grid(y, z)
+    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
+              'T': 300, 'dt': 100}
+    coh_model, spc_model = 'iec', 'kaimal'
+    n_real = 500  # number of realizations in ensemble
+
+    # get theoretical coherence
+    pair_df = spat_to_pair_df(spat_df)
+    coh_theo = get_coherence(pair_df, 1 / kwargs['T'],
+                             **kwargs).values.flatten()
+
+    # when
+    turb_ens = np.empty((int(np.ceil(kwargs['T']/kwargs['dt'])),
+                         3 * len(y) * len(z), n_real))
+    for i_real in range(n_real):
+        turb_ens[:, :, i_real] = gen_turb(spat_df, coh_model=coh_model,
+                                          spc_model=spc_model,
+                                          **kwargs)
+    turb_fft = np.fft.rfft(turb_ens, axis=0)
+    ii_jj = [(i, j) for (i, j) in itertools.combinations(spat_df.index, 2)]
+    ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]
+    x_ii, x_jj = turb_fft[1, ii, :], turb_fft[1, jj, :]
+    coh = np.mean((x_ii * np.conj(x_jj)) /
+                  (np.sqrt(x_ii * np.conj(x_ii)) *
+                   np.sqrt(x_jj * np.conj(x_jj))),
+                  axis=-1)
+
+    # then
+    assert np.abs(coh - coh_theo).max() < 0.10
