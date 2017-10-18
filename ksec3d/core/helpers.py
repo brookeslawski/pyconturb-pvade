@@ -6,6 +6,7 @@ Author
 Jenni Rinker
 rink@dtu.dk
 """
+import itertools
 import os
 
 import numpy as np
@@ -120,3 +121,27 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
             f' # wind_p{i_p//3} ; \n'
 
     return str_cntr_pos0, str_mann, str_output
+
+
+def spat_to_pair_df(spat_df):
+    """convert spat_df to pair_df
+    """
+    n_s = spat_df.shape[0]  # no. of spatial points
+    n_pairs = int(np.math.factorial(n_s) / 2 /
+                  np.math.factorial(n_s - 2))  # no. of combos
+    pair_df = pd.DataFrame(np.empty((n_pairs, 8)),
+                           columns=['k1', 'x1', 'y1', 'z1', 'k2', 'x2',
+                                    'y2', 'z2'])  # df input to coherence fcn
+
+    i_df = 0  # initialize counter
+    ii, jj = [], []  # use these index vectors later during cholesky decomp
+    for (i, j) in itertools.combinations(spat_df.index, 2):
+        pair_df.loc[i_df, ['k1', 'x1', 'y1', 'z1']] = \
+            spat_df.loc[i, ['k', 'x', 'y', 'z']].values
+        pair_df.loc[i_df, ['k2', 'x2', 'y2', 'z2']] = \
+            spat_df.loc[j, ['k', 'x', 'y', 'z']].values
+        i_df += 1
+        ii.append(i)  # save index
+        jj.append(j)  # save index
+
+    return pair_df

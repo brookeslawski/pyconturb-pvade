@@ -18,7 +18,7 @@ def test_main_default():
     """Check the default value for get_coherence
     """
     # given
-    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
+    pair_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
                            columns=['k1', 'x1', 'y1', 'z1',
                                     'k2', 'x2', 'y2', 'z2'])
     freq = 1
@@ -26,7 +26,7 @@ def test_main_default():
     coh_theory = 5.637379774e-6
 
     # when
-    coh = get_coherence(spat_df, freq,
+    coh = get_coherence(pair_df, freq,
                         **kwargs)
 
     # then

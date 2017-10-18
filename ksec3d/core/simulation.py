@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from .coherence import get_coherence
-from .helpers import get_iec_sigk
+from .helpers import get_iec_sigk, spat_to_pair_df
 from .spectra import get_spectrum
 from .wind_profiles import get_wsp_profile
 
@@ -90,24 +90,9 @@ def get_phasors(spat_df,
     """
     n_f = int(np.ceil(kwargs['T'] / kwargs['dt'])//2 + 1)  # no. of freqs
     freq = np.arange(n_f) / kwargs['T']  # frequency array
-    n_s = spat_df.shape[0]  # no. of spatial points
+    n_s = spat_df.shape[0]
 
-    n_pairs = int(np.math.factorial(n_s) / 2 /
-                  np.math.factorial(n_s - 2))  # no. of combos
-    pair_df = pd.DataFrame(np.empty((n_pairs, 8)),
-                           columns=['k1', 'x1', 'y1', 'z1', 'k2', 'x2',
-                                    'y2', 'z2'])  # df input to coherence fcn
-
-    i_df = 0  # initialize counter
-    ii, jj = [], []  # use these index vectors later during cholesky decomp
-    for (i, j) in itertools.combinations(spat_df.index, 2):
-        pair_df.loc[i_df, ['k1', 'x1', 'y1', 'z1']] = \
-            spat_df.loc[i, ['k', 'x', 'y', 'z']].values
-        pair_df.loc[i_df, ['k2', 'x2', 'y2', 'z2']] = \
-            spat_df.loc[j, ['k', 'x', 'y', 'z']].values
-        i_df += 1
-        ii.append(i)  # save index
-        jj.append(j)  # save index
+    pair_df = spat_to_pair_df(spat_df)
     coh_df = get_coherence(pair_df, freq, coh_model='iec', **kwargs)
 
     np.random.seed(seed=seed)  # initialize random number generator
@@ -115,6 +100,8 @@ def get_phasors(spat_df,
     pha_df = pd.DataFrame(np.empty((n_s, n_f)),
                           columns=freq, dtype=complex)
 
+    ii_jj = [(i, j) for (i, j) in itertools.combinations(spat_df.index, 2)]
+    ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]
     for i_f in range(freq.size):
         pha_df.iloc[:, i_f] = correlate_phasors(i_f, coh_df, unc_pha,
                                                 n_s, ii, jj)
