@@ -14,8 +14,7 @@ from .wind_profiles import get_wsp_profile
 
 def gen_turb(spat_df,
              coh_model='iec', spc_model='kaimal', wsp_profile='iec',
-             T=600, dt=0.1, scale=True,
-             seed=False, **kwargs):
+             scale=True, seed=False, **kwargs):
     """Generate turbulence box
 
     Notes
@@ -26,18 +25,16 @@ def gen_turb(spat_df,
     """
 
     # define time vector
-    n_t = np.ceil(T / dt)
-    t = np.arange(n_t) * dt
+    n_t = np.ceil(kwargs['T'] / kwargs['dt'])
+    t = np.arange(n_t) * kwargs['dt']
 
     # create dataframe with magnitudes
-    mag_df = get_magnitudes(spat_df, spc_model=spc_model, T=T, dt=dt,
-                            scale=scale, **kwargs)
+    mag_df = get_magnitudes(spat_df, spc_model=spc_model, scale=scale,
+                            **kwargs)
 
     # create dataframe with phases
     pha_df = get_phasors(spat_df,
-                         coh_model='iec', T=T, dt=dt,
-                         seed=seed,
-                         **kwargs)
+                         coh_model='iec', seed=seed, **kwargs)
 
     # multiply dataframes together
     turb_fft = pd.DataFrame(mag_df.values * pha_df.values,
@@ -59,14 +56,12 @@ def gen_turb(spat_df,
 
 
 def get_magnitudes(spat_df,
-                   spc_model='kaimal', T=600, dt=0.1, scale=True,
-                   **kwargs):
+                   spc_model='kaimal', scale=True, **kwargs):
     """Create dataframe of magnitudes with desired power spectra
     """
-
-    n_t = int(np.ceil(T / dt))
+    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
     n_f = n_t // 2 + 1
-    df = 1 / T
+    df = 1 / kwargs['T']
     freq = np.arange(n_f) * df
     spc_df = get_spectrum(spat_df, freq, spc_model=spc_model, **kwargs)
     mags = np.sqrt(spc_df * df / 2)
@@ -84,8 +79,7 @@ def get_magnitudes(spat_df,
 
 
 def get_phasors(spat_df,
-                coh_model='iec', T=600, dt=0.1, seed=None,
-                **kwargs):
+                coh_model='iec', seed=None, **kwargs):
     """Create realization of phasors with desired coherence
 
     Notes
@@ -94,9 +88,8 @@ def get_phasors(spat_df,
     phase information, but not the magnitude information. The uncorrelated
     phasors are magnitude 1, but the correlated phasors are not.
     """
-
-    n_f = int(np.ceil(T / dt)//2 + 1)  # no. of frequencies
-    freq = np.arange(n_f) / T  # frequency array
+    n_f = int(np.ceil(kwargs['T'] / kwargs['dt'])//2 + 1)  # no. of freqs
+    freq = np.arange(n_f) / kwargs['T']  # frequency array
     n_s = spat_df.shape[0]  # no. of spatial points
 
     n_pairs = int(np.math.factorial(n_s) / 2 /

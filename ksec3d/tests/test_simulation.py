@@ -16,8 +16,9 @@ def test_get_phases():
     spat_df = pd.DataFrame([['u', 0, 0, 50],
                             ['u', 0, 0, 51]],
                            columns=['k', 'x', 'y', 'z'])
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2}
-    coh_model, T, dt, seed = 'iec', 8, 4, None
+    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2,
+              'T': 8, 'dt': 4}
+    coh_model, seed = 'iec', None
     coh_theory = 0.8606565849
     tol = 0.05  # stochastic tolerance
     n_real = 100  # no. realizations for ensemble averaging
@@ -28,8 +29,7 @@ def test_get_phases():
     den2 = 0
     for i_real in range(n_real):
         phasors = get_phasors(spat_df,
-                              coh_model=coh_model, T=T, dt=dt,
-                              seed=seed,
+                              coh_model=coh_model, seed=seed,
                               **kwargs)
         Xi, Xj = phasors.iloc[0, 1], phasors.iloc[1, 1]
         coh += Xi * np.conj(Xj)
@@ -48,13 +48,14 @@ def test_iec_mags_sum():
     x = [0]  # x-components of turbulent grid
     z = [70]  # z-components of turbulent grid
     spat_df = gen_spat_grid(x, z)
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': z}
-    spc_model, T, dt = 'kaimal', 300, 1.
+    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': z,
+              'T': 300, 'dt': 1}
+    spc_model = 'kaimal'
     var_theo = np.array([1.834, 1.4672, 0.917]) ** 2
 
     # when
-    mags_ksec = get_magnitudes(spat_df, spc_model=spc_model, T=T, dt=dt,
-                               scale=True, **kwargs)
+    mags_ksec = get_magnitudes(spat_df, spc_model=spc_model, scale=True,
+                               **kwargs)
     var_ksec = 2 * (mags_ksec.values ** 2).sum(axis=1)
 
     # then
@@ -67,14 +68,15 @@ def test_iec_turb_mn_std_dev():
     # given
     x, z = 0, [70, 80]
     spat_df = gen_spat_grid(x, z)
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70}
-    coh_model, spc_model, T, dt = 'iec', 'kaimal', 300, 1
+    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
+              'T': 300, 'dt': 1}
+    coh_model, spc_model = 'iec', 'kaimal'
     sig_theo = np.array([1.834, 1.4672, 0.917, 1.834, 1.4672, 0.917])
     u_theo = np.array([10, 0, 0, 10.27066087, 0, 0])
 
     # when
     turb_df = gen_turb(spat_df, coh_model=coh_model, spc_model=spc_model,
-                       T=T, dt=dt, scale=True, **kwargs)
+                       scale=True, **kwargs)
 
     # then
     np.testing.assert_allclose(sig_theo, turb_df.std(axis=0),
