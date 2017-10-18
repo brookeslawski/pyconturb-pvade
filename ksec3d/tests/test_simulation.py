@@ -72,7 +72,7 @@ def test_iec_turb_mn_std_dev():
               'T': 300, 'dt': 1}
     coh_model, spc_model = 'iec', 'kaimal'
     sig_theo = np.array([1.834, 1.4672, 0.917, 1.834, 1.4672, 0.917])
-    u_theo = np.array([10, 0, 0, 10.27066087, 0, 0])
+    u_theo = np.array([-10, 0, 0, -10.27066087, 0, 0])
 
     # when
     turb_df = gen_turb(spat_df, coh_model=coh_model, spc_model=spc_model,
