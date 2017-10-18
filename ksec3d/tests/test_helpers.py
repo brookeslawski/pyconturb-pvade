@@ -17,13 +17,13 @@ def test_gen_spat_grid():
     """Test the generation of the spatial grid
     """
     # given
-    x = [-10, 10]
+    y = [-10, 10]
     z = [50, 70]
     first_row = ['vxt', 'p0', 0, -10, 50]
-    theo_size = (3 * len(x) * len(z)) * len(first_row)
+    theo_size = (3 * len(y) * len(z)) * len(first_row)
 
     # when
-    spat_df = gen_spat_grid(x, z)
+    spat_df = gen_spat_grid(y, z)
 
     # then
     assert spat_df.size == theo_size

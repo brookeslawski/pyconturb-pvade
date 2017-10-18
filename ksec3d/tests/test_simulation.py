@@ -50,9 +50,9 @@ def test_iec_mags_sum():
     """test that the iec magnitudes sum to the right value (or close to)
     """
     # given
-    x = [0]  # x-components of turbulent grid
+    y = [0]  # x-components of turbulent grid
     z = [70]  # z-components of turbulent grid
-    spat_df = gen_spat_grid(x, z)
+    spat_df = gen_spat_grid(y, z)
     kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': z,
               'T': 300, 'dt': 1}
     spc_model = 'kaimal'
@@ -71,8 +71,8 @@ def test_iec_turb_mn_std_dev():
     """test that iec turbulence has correct mean and std deviation
     """
     # given
-    x, z = 0, [70, 80]
-    spat_df = gen_spat_grid(x, z)
+    y, z = 0, [70, 80]
+    spat_df = gen_spat_grid(y, z)
     kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
               'T': 300, 'dt': 1}
     coh_model, spc_model = 'iec', 'kaimal'
