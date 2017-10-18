@@ -1,7 +1,8 @@
 # -*- coding: utf-8 -*-
 """Setup file for ksec3d package
 
-To install, run following command in Anaconda prompt/terminal:
+To install, cd to directory with the setup.py file and then
+run following command in Anaconda prompt/terminal:
     pip install -e .
 """
 
@@ -14,6 +15,6 @@ setup(name='ksec3d',
       url='https://gitlab.windenergy.dtu.dk/rink/ksec3d',
       author='Jenni Rinker',
       author_email='rink@dtu.dk',
-      license='MIT',
+      license='GNU GPL',
       packages=['ksec3d'],
       zip_safe=False)
