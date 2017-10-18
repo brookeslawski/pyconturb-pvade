@@ -70,11 +70,11 @@ def df_to_hawc2(turb_df, spat_df, path):
 
     # convert to hawc2 coordinate systems
     u_bin = -turb_df[[s for s in turb_df.columns
-                      if 'vx_' in s]].values.reshape((n_x, n_y, n_z))
+                      if 'vxt_' in s]].values.reshape((n_x, n_y, n_z))
     v_bin = -turb_df[[s for s in turb_df.columns
-                      if 'vy_' in s]].values.reshape((n_x, n_y, n_z))
+                      if 'vyt_' in s]].values.reshape((n_x, n_y, n_z))
     w_bin = turb_df[[s for s in turb_df.columns
-                     if 'vz_' in s]].values.reshape((n_x, n_y, n_z))
+                     if 'vzt_' in s]].values.reshape((n_x, n_y, n_z))
 
     # save binary files
     for comp, turb in zip(['u', 'v', 'w'], [u_bin, v_bin, w_bin]):
