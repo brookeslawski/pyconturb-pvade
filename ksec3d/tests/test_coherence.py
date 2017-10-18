@@ -13,7 +13,7 @@ def test_main_default():
     """Check the default value for get_coherence
     """
     # given
-    spat_df = pd.DataFrame([['u', 0, 0, 0, 'u', 0, 0, 1]],
+    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
                            columns=['k1', 'x1', 'y1', 'z1',
                                     'k2', 'x2', 'y2', 'z2'])
     freq = 1
@@ -32,7 +32,7 @@ def test_main_badcohmodel():
     """Should raise an error if a wrong coherence model is passed in
     """
     # given
-    spat_df = pd.DataFrame([['u', 0, 0, 0, 'u', 0, 0, 1]],
+    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
                            columns=['k1', 'x1', 'y1', 'z1',
                                     'k2', 'x2', 'y2', 'z2'])
     freq = 1
@@ -47,7 +47,7 @@ def test_iec_badedition():
     """IEC coherence should raise an error if any edn other than 3 is given
     """
     # given
-    spat_df = pd.DataFrame([['u', 0, 0, 0, 'u', 0, 0, 1]],
+    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
                            columns=['k1', 'x1', 'y1', 'z1',
                                     'k2', 'x2', 'y2', 'z2'])
     freq = 1
@@ -63,7 +63,7 @@ def test_iec_missingkwargs():
     """IEC coherence should raise an error if missing parameter(s)
     """
     # given
-    spat_df = pd.DataFrame([['u', 0, 0, 0, 'u', 0, 0, 1]],
+    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
                            columns=['k1', 'x1', 'y1', 'z1',
                                     'k2', 'x2', 'y2', 'z2'])
     freq = 1
@@ -79,7 +79,7 @@ def test_iec_value():
     """Verify that the value of IEC coherence matches theory
     """
     # given
-    spat_df = pd.DataFrame([['u', 0, 0, 0, 'u', 0, 0, 1]],
+    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
                            columns=['k1', 'x1', 'y1', 'z1',
                                     'k2', 'x2', 'y2', 'z2'])
     freq = 0.5
@@ -94,7 +94,7 @@ def test_iec_value():
     assert np.isclose(coh, coh_theory)
 
     # given
-    spat_df = pd.DataFrame([['u', 0, 0, 0, 'v', 0, 0, 1]],
+    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vyt', 0, 0, 1]],
                            columns=['k1', 'x1', 'y1', 'z1',
                                     'k2', 'x2', 'y2', 'z2'])
     freq = 1

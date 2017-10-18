@@ -13,8 +13,8 @@ def test_get_phases():
     """Check the value for get_phases
     """
     # given
-    spat_df = pd.DataFrame([['u', 0, 0, 50],
-                            ['u', 0, 0, 51]],
+    spat_df = pd.DataFrame([['vxt', 0, 0, 50],
+                            ['vxt', 0, 0, 51]],
                            columns=['k', 'x', 'y', 'z'])
     kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2,
               'T': 8, 'dt': 4}

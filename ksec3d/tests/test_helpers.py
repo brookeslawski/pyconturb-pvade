@@ -14,7 +14,7 @@ def test_gen_spat_grid():
     # given
     x = [-10, 10]
     z = [50, 70]
-    first_row = ['u', 'p0', 0, -10, 50]
+    first_row = ['vxt', 'p0', 0, -10, 50]
     theo_size = (3 * len(x) * len(z)) * len(first_row)
 
     # when
@@ -30,9 +30,9 @@ def test_gen_spat_grid():
 def test_get_iec_sigk():
     """verify values for iec sig_k
     """
-    spat_df = pd.DataFrame([['u', 0, 0, 50],
-                            ['v', 0, 0, 50],
-                            ['w', 0, 0, 50]],
+    spat_df = pd.DataFrame([['vxt', 0, 0, 50],
+                            ['vyt', 0, 0, 50],
+                            ['vzt', 0, 0, 50]],
                            columns=['k', 'x', 'y', 'z'])
     kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2}
     sig_k = get_iec_sigk(spat_df, **kwargs)

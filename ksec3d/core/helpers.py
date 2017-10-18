@@ -22,7 +22,7 @@ def gen_spat_grid(y, z):
     lateral according to a right-hand coordinate system.
     """
     ys, zs = np.meshgrid(y, z)
-    ks = np.array(['u', 'v', 'w'])
+    ks = np.array(['vxt', 'vyt', 'vzt'])
     xs = np.zeros_like(ys)
     ps = [f'p{i:.0f}' for i in np.arange(xs.size)]
     spat_arr = np.vstack((np.tile(ks, xs.size),
@@ -40,8 +40,8 @@ def get_iec_sigk(spat_df, **kwargs):
     """get sig_k for iec
     """
     sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
-    sig_k = sig * (1.0 * (spat_df.k == 'u') + 0.8 * (spat_df.k == 'v') +
-                   0.5 * (spat_df.k == 'w')).values
+    sig_k = sig * (1.0 * (spat_df.k == 'vxt') + 0.8 * (spat_df.k == 'vyt') +
+                   0.5 * (spat_df.k == 'vzt')).values
     return sig_k
 
 
@@ -70,11 +70,11 @@ def df_to_hawc2(turb_df, spat_df, path):
 
     # convert to hawc2 coordinate systems
     u_bin = -turb_df[[s for s in turb_df.columns
-                      if 'u_' in s]].values.reshape((n_x, n_y, n_z))
+                      if 'vx_' in s]].values.reshape((n_x, n_y, n_z))
     v_bin = -turb_df[[s for s in turb_df.columns
-                      if 'v_' in s]].values.reshape((n_x, n_y, n_z))
+                      if 'vy_' in s]].values.reshape((n_x, n_y, n_z))
     w_bin = turb_df[[s for s in turb_df.columns
-                     if 'w_' in s]].values.reshape((n_x, n_y, n_z))
+                     if 'vz_' in s]].values.reshape((n_x, n_y, n_z))
 
     # save binary files
     for comp, turb in zip(['u', 'v', 'w'], [u_bin, v_bin, w_bin]):
@@ -110,7 +110,7 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
                '  end mann '
 
     # string for output
-    pts_df = spat_df.loc[spat_df.k == 'u', ['x', 'y', 'z']]
+    pts_df = spat_df.loc[spat_df.k == 'vxt', ['x', 'y', 'z']]
     str_output = ''
     for i_p in pts_df.index:
         x_p = -pts_df.loc[i_p, 'y']

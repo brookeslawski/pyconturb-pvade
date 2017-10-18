@@ -15,8 +15,8 @@ def get_wsp_profile(spat_df,
     The mean wind speeds are defined according to the x, y, z coordinate system
     in the HAWC2 turbulence coordinate system. In particular, x is directed
     upwind, z is vertical up, and y is lateral to form a right-handed
-    coordinate system. Thus, any non-negative mean wind speeds are often
-    negative, since positive x is directed upwind.
+    coordinate system. Thus, any non-zero mean wind speeds are often negative,
+    since positive x is directed upwind.
     """
 
     if wsp_model == 'none':  # no mean wind speed
@@ -33,7 +33,7 @@ def get_wsp_profile(spat_df,
             raise ValueError('Missing keyword arguments for IEC mean ' +
                              'wind profile model')
         wsp_prof = -(kwargs['v_hub'] *
-                     (spat_df.mask(spat_df.k != 'u', other=0).z
+                     (spat_df.mask(spat_df.k != 'vxt', other=0).z
                      / kwargs['z_hub']) ** alpha).values
 
     else:  # unknown profile model
