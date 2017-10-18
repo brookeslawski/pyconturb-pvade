@@ -14,7 +14,7 @@ from .wind_profiles import get_wsp_profile
 
 def gen_turb(spat_df,
              coh_model='iec', spc_model='kaimal', wsp_profile='iec',
-             scale=True, seed=False, **kwargs):
+             scale=True, seed=None, **kwargs):
     """Generate turbulence box
 
     Notes
@@ -25,7 +25,7 @@ def gen_turb(spat_df,
     """
 
     # define time vector
-    n_t = np.ceil(kwargs['T'] / kwargs['dt'])
+    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
     t = np.arange(n_t) * kwargs['dt']
 
     # create dataframe with magnitudes
@@ -44,7 +44,7 @@ def gen_turb(spat_df,
     # convert to time domain, add mean wind speed profile
     wsp_profile = get_wsp_profile(spat_df,
                                   wsp_model=wsp_profile, **kwargs)
-    turb_t = np.fft.irfft(turb_fft, axis=1).T * n_t + wsp_profile
+    turb_t = np.fft.irfft(turb_fft, axis=1, n=n_t).T * n_t + wsp_profile
 
     # inverse fft and transpose to utilize pandas functions easier
     columns = (spat_df.k + '_' + spat_df.p_id).values
