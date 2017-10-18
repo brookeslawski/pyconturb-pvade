@@ -3,13 +3,18 @@
 """
 import warnings
 
+import numpy as np
+
 
 def get_wsp_profile(spat_df,
                     wsp_model='iec', **kwargs):
     """get the mean wind speed profile at each point
     """
 
-    if wsp_model == 'iec':  # Kaimal spectral model
+    if wsp_model == 'none':  # no mean wind speed
+        wsp_prof = np.zeros(spat_df.shape[0])
+
+    elif wsp_model == 'iec':  # Kaimal spectral model
         alpha = 0.2  # power law coefficient
         if 'ed' not in kwargs.keys():
             warnings.warn('No IEC edition specified -- assuming Ed. 3')
@@ -19,10 +24,11 @@ def get_wsp_profile(spat_df,
         if any([k not in kwargs.keys() for k in ['v_hub', 'z_hub']]):
             raise ValueError('Missing keyword arguments for IEC mean ' +
                              'wind profile model')
-        wsp_df = kwargs['v_hub'] * (spat_df.mask(spat_df.k != 'u', other=0).z
-                                    / kwargs['z_hub']) ** alpha
+        wsp_prof = (kwargs['v_hub'] *
+                    (spat_df.mask(spat_df.k != 'u', other=0).z
+                    / kwargs['z_hub']) ** alpha).values
 
-    else:  # unknown coherence model
+    else:  # unknown profile model
         raise ValueError(f'Wind profile model "{wsp_model}" not recognized.')
 
-    return wsp_df.values
+    return wsp_prof
