@@ -17,6 +17,12 @@ def gen_turb(spat_df,
              T=600, dt=0.1, scale=True,
              seed=False, **kwargs):
     """Generate turbulence box
+
+    Notes
+    -----
+    This turbulence box is defined according to the x, y, z coordinate system
+    in the HAWC2 coordinate system. In particular, x is directed upwind, z is
+    vertical up, and y is lateral to form a right-handed coordinate system.
     """
 
     # define time vector
