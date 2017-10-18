@@ -34,7 +34,7 @@ def gen_turb(spat_df,
 
     # create dataframe with phases
     pha_df = get_phasors(spat_df,
-                         coh_model='iec', seed=seed, **kwargs)
+                         coh_model=coh_model, seed=seed, **kwargs)
 
     # multiply dataframes together
     turb_fft = pd.DataFrame(mag_df.values * pha_df.values,
