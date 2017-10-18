@@ -13,7 +13,6 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import pytest
 
 from ksec3d.core.simulation import gen_turb
 from ksec3d.core.helpers import gen_spat_grid, make_hawc2_input, df_to_hawc2
