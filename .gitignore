@@ -13,3 +13,6 @@
 
 # debugging file
 DELETEME.py
+
+# ipython checkpoints
+.ipynb_checkpoints
