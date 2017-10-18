@@ -6,6 +6,7 @@ Author
 Jenni Rinker
 rink@dtu.dk
 """
+import os
 
 import numpy as np
 import pandas as pd
@@ -13,6 +14,12 @@ import pandas as pd
 
 def gen_spat_grid(y, z):
     """Generate spat_df (all turbulent components and grid defined by x and z)
+
+    Notes
+    -----
+    This coordinate system is aligned with HAWC2's turbulence coordinate
+    system. In other words, x is directed upwind, z is vertical, and y is
+    lateral according to a right-hand coordinate system.
     """
     ys, zs = np.meshgrid(y, z)
     ks = np.array(['u', 'v', 'w'])
@@ -36,3 +43,80 @@ def get_iec_sigk(spat_df, **kwargs):
     sig_k = sig * (1.0 * (spat_df.k == 'u') + 0.8 * (spat_df.k == 'v') +
                    0.5 * (spat_df.k == 'w')).values
     return sig_k
+
+
+def df_to_hawc2(turb_df, spat_df, path):
+    """ksec3d-style turbulence dataframe to binary files for hawc2
+
+    Notes
+    -----
+    1. The turbulence must have been generated on a grid.
+    2. The naming convention must be 'u_p0', 'v_p0, 'w_p0', 'u_p1', etc.,
+       where the point indices proceed vertically along z before horizontally
+       along y.
+    3. The turbulence boxes should have no mean wind speed profiles added.
+    4. The turbulence df must be defined according to HAWC2's turbulence
+       (x, y, z) coordinate system. Thus, the conversion to the (u, v, w)
+       binary coordinate system (bin) from the hawc2 coordinate system is as
+       follows:
+           u(bin) = -u(hawc2)
+           v(bin) = -v(hawc2)
+           w(bin) =  w(hawc2)
+    """
+    # define dimensions
+    n_x = turb_df.shape[0]
+    n_y = len(set(spat_df.y.values))
+    n_z = len(set(spat_df.z.values))
+
+    # convert to hawc2 coordinate systems
+    u_bin = -turb_df[[s for s in turb_df.columns
+                      if 'u_' in s]].values.reshape((n_x, n_y, n_z))
+    v_bin = -turb_df[[s for s in turb_df.columns
+                      if 'v_' in s]].values.reshape((n_x, n_y, n_z))
+    w_bin = turb_df[[s for s in turb_df.columns
+                     if 'w_' in s]].values.reshape((n_x, n_y, n_z))
+
+    # save binary files
+    for comp, turb in zip(['u', 'v', 'w'], [u_bin, v_bin, w_bin]):
+        bin_path = os.path.join(path, f'{comp}.bin')
+        with open(bin_path, 'wb') as bin_fid:
+            turb.astype(np.dtype('<f')).tofile(bin_fid)
+
+    return
+
+
+def make_hawc2_input(turb_dir, spat_df, **kwargs):
+    """return strings for the hawc2 input files
+    """
+    # string of center position
+    z_hub = kwargs['z_hub']
+    str_cntr_pos0 = '  center_pos0             0.0 0.0 ' + \
+        f'{-z_hub:.1f} ; hub height\n'
+
+    # string for mann model block
+    T, dt = kwargs['T'], kwargs['dt']
+    y, z = set(spat_df.y.values), set(spat_df.z.values)
+    n_x, du = int(np.ceil(T / dt)), dt * kwargs['v_hub']
+    n_y, dv = len(y), (max(y) - min(y)) / (len(y) - 1)
+    n_z, dw = len(z), (max(z) - min(z)) / (len(z) - 1)
+    str_mann = '  begin mann ;\n' + \
+               f'    filename_u {turb_dir}/u.bin ; \n' + \
+               f'    filename_v {turb_dir}/v.bin ; \n' + \
+               f'    filename_w {turb_dir}/w.bin ; \n' + \
+               f'    box_dim_u {n_x:.0f} {du:.1f} ; \n' + \
+               f'    box_dim_v {n_y:.0f} {dv:.1f} ; \n' + \
+               f'    box_dim_w {n_z:.0f} {dw:.1f} ; \n' + \
+               f'    dont_scale 1 ; \n' + \
+               '  end mann '
+
+    # string for output
+    pts_df = spat_df.loc[spat_df.k == 'u', ['x', 'y', 'z']]
+    str_output = ''
+    for i_p in pts_df.index:
+        x_p = -pts_df.loc[i_p, 'y']
+        y_p = -pts_df.loc[i_p, 'x']
+        z_p = -pts_df.loc[i_p, 'z']
+        str_output += f'  wind free_wind 1 {x_p:.1f} {y_p:.1f} {z_p:.1f}' + \
+            f' # wind_p{i_p//3} ; \n'
+
+    return str_cntr_pos0, str_mann, str_output
