@@ -9,7 +9,7 @@ To install, run following command in Anaconda prompt/terminal:
 from setuptools import setup
 
 setup(name='ksec3d',
-      version='0.1',
+      version='0.1dev',
       description='Kaimal spectrum with 3D exponential coherence',
       url='https://gitlab.windenergy.dtu.dk/rink/ksec3d',
       author='Jenni Rinker',
