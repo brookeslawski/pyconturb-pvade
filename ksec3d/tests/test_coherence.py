@@ -127,7 +127,8 @@ def test_verify_iec_sim_coherence():
     kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
               'T': 300, 'dt': 100}
     coh_model, spc_model = 'iec', 'kaimal'
-    n_real = 500  # number of realizations in ensemble
+    n_real = 1000  # number of realizations in ensemble
+    coh_thresh = 0.12  # coherence threshold
 
     # get theoretical coherence
     pair_df = spat_to_pair_df(spat_df)
@@ -149,6 +150,7 @@ def test_verify_iec_sim_coherence():
                   (np.sqrt(x_ii * np.conj(x_ii)) *
                    np.sqrt(x_jj * np.conj(x_jj))),
                   axis=-1)
+    max_coh_diff = np.abs(coh - coh_theo).max()
 
     # then
-    assert np.abs(coh - coh_theo).max() < 0.10
+    assert max_coh_diff < coh_thresh
