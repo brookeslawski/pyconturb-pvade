@@ -10,7 +10,7 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.helpers import gen_spat_grid, get_iec_sigk
+from ksec3d.core.helpers import gen_spat_grid, get_iec_sigk, spat_to_pair_df
 
 
 def test_gen_spat_grid():
@@ -43,3 +43,20 @@ def test_get_iec_sigk():
     sig_k = get_iec_sigk(spat_df, **kwargs)
     sig_theo = [1.834, 1.4672, 0.917]
     np.testing.assert_allclose(sig_k, sig_theo)
+
+
+def test_spat_to_pair_df():
+    """converting spat_df to pair_df
+    """
+    # given
+    spat_df = pd.DataFrame([['vxt', 0, 0, 50],
+                            ['vyt', 0, 0, 50]],
+                           columns=['k', 'x', 'y', 'z'])
+    pair_df_theo = pd.DataFrame([['vxt', 0, 0, 50,
+                                  'vyt', 0, 0, 50]],
+                                columns=['k1', 'x1', 'y1', 'z1',
+                                         'k2', 'x2', 'y2', 'z2'])
+    # when
+    pair_df = spat_to_pair_df(spat_df)
+    # then
+    pd.testing.assert_frame_equal(pair_df, pair_df_theo, check_dtype=False)
