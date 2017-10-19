@@ -102,18 +102,10 @@ def get_phasors(spat_df,
     ii_jj = [(i, j) for (i, j) in itertools.combinations(spat_df.index, 2)]
     ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]
     for i_f in range(freq.size):
-        pha_df.iloc[:, i_f] = correlate_phasors(i_f, coh_df, unc_pha,
-                                                n_s, ii, jj)
+        coh_mat = np.ones((n_s, n_s), dtype=complex)
+        coh_mat[ii, jj] = coh_df.iloc[:, i_f].values
+        coh_mat[jj, ii] = np.conj(coh_df.iloc[:, i_f].values)
+        cor_mat = np.linalg.cholesky(coh_mat)
+        pha_df.iloc[:, i_f] = cor_mat @ np.exp(1j * unc_pha[:, i_f])
 
     return pha_df
-
-
-def correlate_phasors(i_f, coh_df, unc_pha, n_s, ii, jj):
-    """Correlate phasors
-    """
-    coh_mat = np.ones((n_s, n_s), dtype=complex)
-    coh_mat[ii, jj] = coh_df.iloc[:, i_f].values
-    coh_mat[jj, ii] = np.conj(coh_df.iloc[:, i_f].values)
-    cor_mat = np.linalg.cholesky(coh_mat)
-    cor_pha = np.dot(cor_mat, np.exp(1j * unc_pha[:, i_f]))
-    return cor_pha
