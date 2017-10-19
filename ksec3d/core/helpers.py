@@ -145,3 +145,13 @@ def spat_to_pair_df(spat_df):
         jj.append(j)  # save index
 
     return pair_df
+
+
+def combine_spat_df(left_df, right_df):
+    """combine two spatial dataframes, changing point index of right_df
+    """
+    max_left_pid = int(left_df[['p_id']].applymap(lambda s: int(s[1:])).max())
+    right_df['p_id'] = right_df[['p_id']]\
+        .applymap(lambda s: f'p{int(s[1:])+max_left_pid+1}')
+    comb_df = pd.concat((left_df, right_df), axis=0).reset_index(drop=True)
+    return comb_df
