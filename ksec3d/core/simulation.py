@@ -12,10 +12,10 @@ from .spectra import get_spectrum
 from .wind_profiles import get_wsp_profile
 
 
-def gen_turb(spat_df,
-             coh_model='iec', spc_model='kaimal', wsp_model='iec',
-             scale=True, seed=None, **kwargs):
-    """Generate turbulence box
+def gen_unc_turb(spat_df,
+                 coh_model='iec', spc_model='kaimal', wsp_model='iec',
+                 scale=True, seed=None, **kwargs):
+    """Generate unconstrained turbulence box
 
     Notes
     -----
@@ -29,12 +29,12 @@ def gen_turb(spat_df,
     t = np.arange(n_t) * kwargs['dt']
 
     # create dataframe with magnitudes
-    mag_df = get_magnitudes(spat_df, spc_model=spc_model, scale=scale,
-                            **kwargs)
+    mag_df = get_unc_magnitudes(spat_df, spc_model=spc_model, scale=scale,
+                                **kwargs)
 
     # create dataframe with phases
-    pha_df = get_phasors(spat_df,
-                         coh_model=coh_model, seed=seed, **kwargs)
+    pha_df = get_unc_phasors(spat_df,
+                             coh_model=coh_model, seed=seed, **kwargs)
 
     # multiply dataframes together
     turb_fft = pd.DataFrame(mag_df.values * pha_df.values,
@@ -54,9 +54,9 @@ def gen_turb(spat_df,
     return turb_df
 
 
-def get_magnitudes(spat_df,
-                   spc_model='kaimal', scale=True, **kwargs):
-    """Create dataframe of magnitudes with desired power spectra
+def get_unc_magnitudes(spat_df,
+                       spc_model='kaimal', scale=True, **kwargs):
+    """Create dataframe of unconstrained magnitudes with desired power spectra
     """
     n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
     n_f = n_t // 2 + 1
@@ -77,9 +77,9 @@ def get_magnitudes(spat_df,
     return alpha * mags
 
 
-def get_phasors(spat_df,
-                coh_model='iec', seed=None, **kwargs):
-    """Create realization of phasors with desired coherence
+def get_unc_phasors(spat_df,
+                    coh_model='iec', seed=None, **kwargs):
+    """Create realization of unconstrained phasors with desired coherence
 
     Notes
     -----

@@ -10,7 +10,8 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.simulation import get_phasors, gen_turb, get_magnitudes
+from ksec3d.core.simulation import get_unc_phasors, gen_unc_turb,\
+                                    get_unc_magnitudes
 from ksec3d.core.helpers import gen_spat_grid
 
 
@@ -33,9 +34,9 @@ def test_get_phases():
     den1 = 0
     den2 = 0
     for i_real in range(n_real):
-        phasors = get_phasors(spat_df,
-                              coh_model=coh_model, seed=seed,
-                              **kwargs)
+        phasors = get_unc_phasors(spat_df,
+                                  coh_model=coh_model, seed=seed,
+                                  **kwargs)
         Xi, Xj = phasors.iloc[0, 1], phasors.iloc[1, 1]
         coh += Xi * np.conj(Xj)
         den1 += Xi * np.conj(Xi)
@@ -59,8 +60,8 @@ def test_iec_mags_sum():
     var_theo = np.array([1.834, 1.4672, 0.917]) ** 2
 
     # when
-    mags_ksec = get_magnitudes(spat_df, spc_model=spc_model, scale=True,
-                               **kwargs)
+    mags_ksec = get_unc_magnitudes(spat_df, spc_model=spc_model, scale=True,
+                                   **kwargs)
     var_ksec = 2 * (mags_ksec.values ** 2).sum(axis=1)
 
     # then
@@ -80,8 +81,8 @@ def test_iec_turb_mn_std_dev():
     u_theo = np.array([-10, 0, 0, -10.27066087, 0, 0])
 
     # when
-    turb_df = gen_turb(spat_df, coh_model=coh_model, spc_model=spc_model,
-                       scale=True, **kwargs)
+    turb_df = gen_unc_turb(spat_df, coh_model=coh_model, spc_model=spc_model,
+                           scale=True, **kwargs)
 
     # then
     np.testing.assert_allclose(sig_theo, turb_df.std(axis=0),
