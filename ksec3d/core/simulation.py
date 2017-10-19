@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 from .coherence import get_coherence
-from .helpers import get_iec_sigk, spat_to_pair_df
+from .helpers import get_iec_sigk, spat_to_pair_df, combine_spat_df
 from .spectra import get_spectrum
 from .wind_profiles import get_wsp_profile
 
@@ -107,5 +107,52 @@ def get_phasors(spat_df,
         coh_mat[jj, ii] = np.conj(coh_df.iloc[:, i_f].values)
         cor_mat = np.linalg.cholesky(coh_mat)
         pha_df.iloc[:, i_f] = cor_mat @ unc_pha[:, i_f]
+
+    return pha_df
+
+
+def get_con_phasors(data_spat_df, sim_spat_df, conturb_df,
+                    coh_model='iec', seed=None, **kwargs):
+    """Create realization of constrained phasors with desired coherence
+    """
+    # combine dat_spat_df and sim_spat_df to single dataframe
+    all_spat_df = combine_spat_df(data_spat_df, sim_spat_df)
+
+    # define useful parameters
+    n_f = int(np.ceil(kwargs['T'] / kwargs['dt'])//2 + 1)  # no. of freqs
+    freq = np.arange(n_f) / kwargs['T']  # frequency array
+    n_s = all_spat_df.shape[0]  # total number of points
+    n_d = data_spat_df.shape[0]  # number of data points
+
+    # get overall coherence matrix
+    pair_df = spat_to_pair_df(all_spat_df)
+    coh_df = get_coherence(pair_df, freq, coh_model='iec', **kwargs)
+
+    np.random.seed(seed=seed)  # initialize random number generator
+
+    conturb_fft = np.fft.rfft(conturb_df.values, axis=0)  # get fft comps
+
+    # get uncorrelated phasors
+    unc_pha = np.full((n_s, n_f), np.nan)
+    unc_pha[n_d:, :] = np.exp(1j * 2 * np.pi *
+                              np.random.rand(n_s - n_d,
+                                             n_f))  # init sim phasrs to rand
+
+    # assign phasors
+    pha_df = pd.DataFrame(np.empty((n_s, n_f)),
+                          columns=freq, dtype=complex)
+    ii_jj = [(i, j) for (i, j) in itertools.combinations(all_spat_df.index, 2)]
+    ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]
+    for i_f in range(freq.size):
+        # get cholesky decomposition of coherence matrix
+        coh_mat = np.ones((n_s, n_s), dtype=complex)
+        coh_mat[ii, jj] = coh_df.iloc[:, i_f].values
+        coh_mat[jj, ii] = np.conj(coh_df.iloc[:, i_f].values)
+        cor_mat = np.linalg.cholesky(coh_mat)
+
+        # assign phasors for data
+        unc_pha[:n_d, i_f] = np.linalg.solve(cor_mat[:n_d, :n_d],
+                                             conturb_fft[i_f, :])
+        pha_df.iloc[:, i_f] = cor_mat @  unc_pha[:, i_f]
 
     return pha_df
