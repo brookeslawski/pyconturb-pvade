@@ -84,15 +84,16 @@ def get_iec_coherence(pair_df, freq,
     if any([k not in kwargs.keys() for k in ['v_hub', 'l_c']]):  # check kwargs
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
-    freq = np.asarray(freq).reshape(1, -1)  # need this to be a row vector
-    coh_df = pd.DataFrame(0, index=np.arange(pair_df.shape[0]),
-                          columns=freq.reshape(-1))  # initialize to zeros
+    freq = np.asarray(freq).reshape(-1, 1)  # need this to be a col vector
+    coh_df = pd.DataFrame(0, index=freq.reshape(-1),
+                          columns=range(pair_df.shape[0]))  # init as zeros
 
     r = np.sqrt((pair_df.y1 - pair_df.y2)**2 +
-                (pair_df.z1 - pair_df.z2)**2).values.reshape(-1, 1)
+                (pair_df.z1 - pair_df.z2)**2).values.reshape(1, -1)
     mask = (pair_df.k1 == 'vxt') & (pair_df.k2 == 'vxt')
-    coh_df.loc[mask] = np.exp(-12 *
-                              np.sqrt((r / kwargs['v_hub'] * freq)**2 +
-                                      (0.12 * r / kwargs['l_c'])**2))[mask]
+    coh_df.loc[:, mask] = np.exp(-12 *
+                                 np.sqrt((r / kwargs['v_hub'] * freq)**2 +
+                                         (0.12 * r /
+                                          kwargs['l_c'])**2))[:, mask]
 
     return coh_df

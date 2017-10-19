@@ -43,7 +43,7 @@ def gen_unc_turb(spat_df,
 
     # convert to time domain, add mean wind speed profile
     wsp_profile = get_wsp_profile(spat_df, wsp_model=wsp_model, **kwargs)
-    turb_t = np.fft.irfft(turb_fft, axis=1, n=n_t).T * n_t + wsp_profile
+    turb_t = np.fft.irfft(turb_fft, axis=0, n=n_t) * n_t + wsp_profile
 
     # inverse fft and transpose to utilize pandas functions easier
     columns = (spat_df.k + '_' + spat_df.p_id).values
@@ -64,11 +64,11 @@ def get_unc_magnitudes(spat_df,
     freq = np.arange(n_f) * df
     spc_df = get_spectrum(spat_df, freq, spc_model=spc_model, **kwargs)
     mags = np.sqrt(spc_df * df / 2)
-    mags.iloc[:, 0] = 0.  # set dc component to zero
+    mags.iloc[0, :] = 0.  # set dc component to zero
 
     if scale:
-        sum_magsq = 2 * (mags ** 2).sum(axis=1).values.reshape(-1, 1)
-        sig_k = get_iec_sigk(spat_df, **kwargs).reshape(-1, 1)
+        sum_magsq = 2 * (mags ** 2).sum(axis=0).values.reshape(1, -1)
+        sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
         alpha = np.sqrt((n_t - 1) / n_t
                         * (sig_k ** 2) / sum_magsq)  # scaling factor
     else:
@@ -90,8 +90,8 @@ def get_con_magnitudes(all_spat_df, n_d,
     mags.iloc[:, 0] = 0.  # set dc component to zero
 
     if scale:
-        sum_magsq = 2 * (mags ** 2).sum(axis=1).values.reshape(-1, 1)
-        sig_k = get_iec_sigk(all_spat_df, **kwargs).reshape(-1, 1)
+        sum_magsq = 2 * (mags ** 2).sum(axis=0).values.reshape(1, -1)
+        sig_k = get_iec_sigk(all_spat_df, **kwargs).reshape(1, -1)
         alpha = np.sqrt((n_t - 1) / n_t
                         * (sig_k ** 2) / sum_magsq)  # scaling factor
     else:
@@ -122,18 +122,18 @@ def get_unc_phasors(spat_df,
     coh_df = get_coherence(pair_df, freq, coh_model='iec', **kwargs)
 
     np.random.seed(seed=seed)  # initialize random number generator
-    unc_pha = np.exp(1j * 2 * np.pi * np.random.rand(n_s, n_f))
-    pha_df = pd.DataFrame(np.empty((n_s, n_f)),
-                          columns=freq, dtype=complex)
+    unc_pha = np.exp(1j * 2 * np.pi * np.random.rand(n_f, n_s))
+    pha_df = pd.DataFrame(np.empty((n_f, n_s)),
+                          index=freq, dtype=complex)
 
     ii_jj = [(i, j) for (i, j) in itertools.combinations(spat_df.index, 2)]
     ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]
     for i_f in range(freq.size):
         coh_mat = np.ones((n_s, n_s), dtype=complex)
-        coh_mat[ii, jj] = coh_df.iloc[:, i_f].values
-        coh_mat[jj, ii] = np.conj(coh_df.iloc[:, i_f].values)
+        coh_mat[ii, jj] = coh_df.iloc[i_f, :].values
+        coh_mat[jj, ii] = np.conj(coh_df.iloc[i_f, :].values)
         cor_mat = np.linalg.cholesky(coh_mat)
-        pha_df.iloc[:, i_f] = cor_mat @ unc_pha[:, i_f]
+        pha_df.iloc[i_f, :] = cor_mat @ unc_pha[i_f, :]
 
     return pha_df
 

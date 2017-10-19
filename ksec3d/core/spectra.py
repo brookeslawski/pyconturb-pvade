@@ -100,5 +100,6 @@ def get_kaimal_spectrum(spat_df, freq,
 
     spc_df[:] = (sig_k**2) * (4 * tau) / \
         np.power(1. + 6 * tau * freq, 5. / 3.)  # Kaimal 1972
+    spc_df = spc_df.T  # put frequency along rows
 
     return spc_df
