@@ -77,6 +77,33 @@ def get_unc_magnitudes(spat_df,
     return alpha * mags
 
 
+def get_con_magnitudes(all_spat_df, n_d,
+                       spc_model='kaimal', scale=True, **kwargs):
+    """Create dataframe of constrained magnitudes with desired power spectra
+    """
+    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
+    n_f = n_t // 2 + 1
+    df = 1 / kwargs['T']
+    freq = np.arange(n_f) * df
+    spc_df = get_spectrum(all_spat_df, freq, spc_model=spc_model, **kwargs)
+    mags = np.sqrt(spc_df * df / 2)
+    mags.iloc[:, 0] = 0.  # set dc component to zero
+
+    if scale:
+        sum_magsq = 2 * (mags ** 2).sum(axis=1).values.reshape(-1, 1)
+        sig_k = get_iec_sigk(all_spat_df, **kwargs).reshape(-1, 1)
+        alpha = np.sqrt((n_t - 1) / n_t
+                        * (sig_k ** 2) / sum_magsq)  # scaling factor
+    else:
+        alpha = 1
+    scal_mags = alpha * mags  # scale magnitues
+
+    # set rows corresponding to data to unity (phasors have mag info there)
+    scal_mags.iloc[:n_d, :] = 1
+
+    return scal_mags
+
+
 def get_unc_phasors(spat_df,
                     coh_model='iec', seed=None, **kwargs):
     """Create realization of unconstrained phasors with desired coherence

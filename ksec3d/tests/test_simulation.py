@@ -11,8 +11,8 @@ import numpy as np
 import pandas as pd
 
 from ksec3d.core.simulation import get_unc_phasors, gen_unc_turb,\
-                                    get_unc_magnitudes
-from ksec3d.core.helpers import gen_spat_grid
+                                    get_unc_magnitudes, get_con_magnitudes
+from ksec3d.core.helpers import gen_spat_grid, combine_spat_df
 
 
 def test_get_phases():
@@ -89,3 +89,27 @@ def test_iec_turb_mn_std_dev():
                                atol=0.01, rtol=0.50)
     np.testing.assert_allclose(u_theo, turb_df.mean(axis=0),
                                atol=0.01)
+
+
+def test_get_con_mags():
+    """Verify that the correct magnitudes are fetched for the constrained case
+    """
+    # given
+    data_spat_df = pd.DataFrame([['vxt', 'p0', 0.0, 0.0, 70.0]],
+                                columns=['k', 'p_id', 'x', 'y', 'z'])
+    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
+              'T': 300, 'dt': 1}
+    spc_model, scale = 'kaimal', False
+    y, z = 0, 75
+    sim_spat_df = gen_spat_grid(y, z)
+    all_spat_df = combine_spat_df(data_spat_df, sim_spat_df)
+    mag_theo = [1, 0.5667309913]  # mag_dat(df), mag_u(df)
+
+    # when
+    n_d = data_spat_df.shape[0]
+    con_mags = get_con_magnitudes(all_spat_df, n_d,
+                                  spc_model=spc_model, scale=scale, **kwargs)
+    mag_sim = con_mags.iloc[0:2, 1]
+
+    # then
+    np.testing.assert_allclose(mag_sim, mag_theo)
