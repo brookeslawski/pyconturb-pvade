@@ -95,7 +95,7 @@ def get_phasors(spat_df,
     coh_df = get_coherence(pair_df, freq, coh_model='iec', **kwargs)
 
     np.random.seed(seed=seed)  # initialize random number generator
-    unc_pha = 2 * np.pi * np.random.rand(n_s, n_f)
+    unc_pha = np.exp(1j * 2 * np.pi * np.random.rand(n_s, n_f))
     pha_df = pd.DataFrame(np.empty((n_s, n_f)),
                           columns=freq, dtype=complex)
 
@@ -106,6 +106,6 @@ def get_phasors(spat_df,
         coh_mat[ii, jj] = coh_df.iloc[:, i_f].values
         coh_mat[jj, ii] = np.conj(coh_df.iloc[:, i_f].values)
         cor_mat = np.linalg.cholesky(coh_mat)
-        pha_df.iloc[:, i_f] = cor_mat @ np.exp(1j * unc_pha[:, i_f])
+        pha_df.iloc[:, i_f] = cor_mat @ unc_pha[:, i_f]
 
     return pha_df
