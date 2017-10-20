@@ -174,11 +174,10 @@ def h2t_to_uvw(turb_df):
     """convert turbulence dataframe with hawc2 turbulence coord sys to uvw
     """
     comp_tups = [('vxt', 'u', -1), ('vyt', 'v', -1), ('vzt', 'w', 1)]
-    new_turb_df = pd.DataFrame(np.empty(turb_df.shape),
-                               index=turb_df.index)
+    new_turb_df = pd.DataFrame(index=turb_df.index)
     for comp_h2t, comp_uvw, sign in comp_tups:
         old_cols = [s for s in turb_df.columns if comp_h2t in s]
         new_cols = [s.replace(comp_h2t, comp_uvw) for s in old_cols]
-        new_turb_df[new_cols] = sign * turb_df[old_cols]
+        new_turb_df[new_cols] = sign * turb_df.loc[:, old_cols]
 
     return new_turb_df

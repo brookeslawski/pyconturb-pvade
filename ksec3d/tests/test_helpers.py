@@ -119,16 +119,12 @@ def test_h2t_to_uvw():
     """test converting turb_df to uvw coor sys
     """
     # given
-    y, z = 0, 70
-    spat_df = gen_spat_grid(y, z)
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
-              'T': 300, 'dt': 1}
-    coh_model, spc_model = 'iec', 'kaimal'
-    turb_df = gen_turb(spat_df, coh_model=coh_model, spc_model=spc_model,
-                       **kwargs)
+    turb_df = pd.DataFrame([[1, 1, 1]], index=[1],
+                           columns=['vxt_p0', 'vyt_p0', 'vzt_p0'])
+    theo_df = pd.DataFrame([[-1, -1, 1]], index=[1],
+                           columns=['u_p0', 'v_p0', 'w_p0'])
     # when
     uvw_turb_df = h2t_to_uvw(turb_df)
     # then
-    np.testing.assert_allclose(turb_df.vxt_p0, -uvw_turb_df.u_p0)  # u
-    np.testing.assert_allclose(turb_df.vyt_p0, -uvw_turb_df.v_p0)  # v
-    np.testing.assert_allclose(turb_df.vzt_p0, uvw_turb_df.w_p0)  # w
+    pd.testing.assert_frame_equal(uvw_turb_df, theo_df,
+                                  check_dtype=False)
