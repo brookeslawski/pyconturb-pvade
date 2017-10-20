@@ -14,7 +14,7 @@ import pytest
 
 from ksec3d.core.coherence import get_coherence, get_iec_coherence
 from ksec3d.core.helpers import gen_spat_grid, spat_to_pair_df
-from ksec3d.core.simulation import gen_unc_turb
+from ksec3d.core.simulation import gen_turb
 
 
 def test_main_default():
@@ -139,9 +139,9 @@ def test_verify_iec_sim_coherence():
     turb_ens = np.empty((int(np.ceil(kwargs['T']/kwargs['dt'])),
                          3 * len(y) * len(z), n_real))
     for i_real in range(n_real):
-        turb_ens[:, :, i_real] = gen_unc_turb(spat_df, coh_model=coh_model,
-                                              spc_model=spc_model,
-                                              **kwargs)
+        turb_ens[:, :, i_real] = gen_turb(spat_df, coh_model=coh_model,
+                                          spc_model=spc_model,
+                                          **kwargs)
     turb_fft = np.fft.rfft(turb_ens, axis=0)
     ii_jj = [(i, j) for (i, j) in itertools.combinations(spat_df.index, 2)]
     ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]

@@ -63,6 +63,21 @@ def test_spat_to_pair_df():
     pd.testing.assert_frame_equal(pair_df, pair_df_theo, check_dtype=False)
 
 
+def test_one_spat_to_pair():
+    """spatial df with one element should produce an empty pair
+    """
+    # given
+    spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50]],
+                           columns=['k', 'p_id', 'x', 'y', 'z'])
+    pair_df_theo = pd.DataFrame(np.empty((0, 8)),
+                                columns=['k1', 'x1', 'y1', 'z1',
+                                         'k2', 'x2', 'y2', 'z2'])
+    # when
+    pair_df = spat_to_pair_df(spat_df)
+    # then
+    pd.testing.assert_frame_equal(pair_df, pair_df_theo, check_dtype=False)
+
+
 def test_combine_spat_df():
     """combining two spat_df
     """
@@ -78,3 +93,22 @@ def test_combine_spat_df():
     comb_df = combine_spat_df(left_df, right_df)
     # then
     pd.testing.assert_frame_equal(comb_df, comb_df_theo, check_dtype=False)
+
+
+def test_combine_empty_spat_dfs():
+    """combining empty spat_dfs
+    """
+    # given
+    left_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50]],
+                           columns=['k', 'p_id', 'x', 'y', 'z'])
+    right_df = pd.DataFrame([['vxt', 'p0', 0, 0, 60]],
+                            columns=['k', 'p_id', 'x', 'y', 'z'])
+    empty_df = pd.DataFrame(np.empty((0, 5)),
+                            columns=['k', 'p_id', 'x', 'y', 'z'])
+    theo_dfs = [left_df, right_df]
+    # when
+    comb_dfs = [combine_spat_df(left_df, empty_df),
+                combine_spat_df(empty_df, right_df)]
+    # then
+    for (res_df, theo_df) in zip(comb_dfs, theo_dfs):
+        pd.testing.assert_frame_equal(res_df, theo_df, check_dtype=False)

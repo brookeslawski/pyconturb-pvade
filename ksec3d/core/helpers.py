@@ -13,6 +13,9 @@ import numpy as np
 import pandas as pd
 
 
+_spat_colnames = ['k', 'p_id', 'x', 'y', 'z']
+
+
 def gen_spat_grid(y, z):
     """Generate spat_df (all turbulent components and grid defined by x and z)
 
@@ -32,7 +35,7 @@ def gen_spat_grid(y, z):
                           np.repeat(ys.T.reshape(-1), ks.size),
                           np.repeat(zs.T.reshape(-1), ks.size))).T
     spat_df = pd.DataFrame(spat_arr,
-                           columns=['k', 'p_id', 'x', 'y', 'z'])
+                           columns=_spat_colnames)
     spat_df[['x', 'y', 'z']] = spat_df[['x', 'y', 'z']].astype(float)
     return spat_df
 
@@ -127,6 +130,11 @@ def spat_to_pair_df(spat_df):
     """convert spat_df to pair_df
     """
     n_s = spat_df.shape[0]  # no. of spatial points
+    if n_s == 1:
+        n_pairs = 0
+        return pd.DataFrame(np.empty((n_pairs, 8)),
+                            columns=['k1', 'x1', 'y1', 'z1', 'k2', 'x2',
+                                     'y2', 'z2'])  # df input to coherence fcn
     n_pairs = int(np.math.factorial(n_s) / 2 /
                   np.math.factorial(n_s - 2))  # no. of combos
     pair_df = pd.DataFrame(np.empty((n_pairs, 8)),
@@ -150,6 +158,11 @@ def spat_to_pair_df(spat_df):
 def combine_spat_df(left_df, right_df):
     """combine two spatial dataframes, changing point index of right_df
     """
+    if left_df.size == 0:
+        return right_df.copy()
+    if right_df.size == 0:
+        return left_df.copy()
+
     max_left_pid = int(left_df[['p_id']].applymap(lambda s: int(s[1:])).max())
     right_df['p_id'] = right_df[['p_id']]\
         .applymap(lambda s: f'p{int(s[1:])+max_left_pid+1}')

@@ -14,7 +14,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.simulation import gen_unc_turb
+from ksec3d.core.simulation import gen_turb
 from ksec3d.core.helpers import gen_spat_grid, make_hawc2_input, df_to_hawc2
 from ksec3d.io.hawc2 import dat_to_df
 
@@ -61,10 +61,10 @@ def test_binary_thru_hawc2():
                 new_fid.write(new_line)
 
     # 4. generate turbulence files
-    turb_df = gen_unc_turb(spat_df,
-                           coh_model=coh_model, spc_model=spc_model,
-                           wsp_profile=wsp_profile, scale=True,
-                           seed=False, **kwargs)
+    turb_df = gen_turb(spat_df,
+                       coh_model=coh_model, spc_model=spc_model,
+                       wsp_profile=wsp_profile, scale=True,
+                       seed=False, **kwargs)
     df_to_hawc2(turb_df, spat_df, tmp_dir)
     turb_df.reset_index().to_csv(csv_path)
     del turb_df
