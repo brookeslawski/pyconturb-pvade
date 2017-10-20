@@ -56,3 +56,36 @@ def test_iec_turb_mn_std_dev():
                                atol=0.01, rtol=0.50)
     np.testing.assert_allclose(u_theo, turb_df.mean(axis=0),
                                atol=0.01)
+
+
+def test_con_iec_mn_std_dev():
+    """mean and standard of iec turbulence, and that con'd turb is regen'd
+    """
+    # given -- constraining points
+    con_spat_df = pd.DataFrame([['vxt', 'p0', 0.0, 0.0, 70.0]],
+                               columns=['k', 'p_id', 'x', 'y', 'z'])
+    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
+              'T': 300, 'dt': 0.5}
+    coh_model, spc_model, wsp_model = 'iec', 'kaimal', 'iec'
+    con_turb_df = gen_turb(con_spat_df, coh_model=coh_model,
+                           spc_model=spc_model,
+                           wsp_model=wsp_model, **kwargs)
+    # given -- simulated, constrainted turbulence
+    y, z = 0, 72
+    sim_spat_df = gen_spat_grid(y, z)
+    sig_theo = np.array([1.834, 1.834, 1.4672, 0.917])
+    u_theo = np.array([-10, -10.05650077210035, 0, 0])
+
+    # when
+    sim_turb_df = gen_turb(sim_spat_df, con_data={'con_spat_df': con_spat_df,
+                                                  'con_turb_df': con_turb_df},
+                           coh_model=coh_model, spc_model=spc_model,
+                           wsp_model=wsp_model, **kwargs)
+    # then
+    np.testing.assert_allclose(sig_theo, sim_turb_df.std(axis=0),
+                               atol=0.01, rtol=0.50)  # std devs are close
+    np.testing.assert_allclose(u_theo, sim_turb_df.mean(axis=0),
+                               atol=0.01)  # means are close
+    np.testing.assert_allclose(con_turb_df.vxt_p0,
+                               sim_turb_df.vxt_p0,
+                               atol=0.01)  # regen'd const pt matches const
