@@ -155,18 +155,24 @@ def spat_to_pair_df(spat_df):
     return pair_df
 
 
-def combine_spat_df(left_df, right_df):
+def combine_spat_df(left_df, right_df,
+                    drop_duplicates=True):
     """combine two spatial dataframes, changing point index of right_df
     """
     if left_df.size == 0:
         return right_df.copy()
     if right_df.size == 0:
         return left_df.copy()
+    left_df = left_df.copy()  # don't want to overwrite original dataframes
+    right_df = right_df.copy()
 
     max_left_pid = int(left_df[['p_id']].applymap(lambda s: int(s[1:])).max())
     right_df['p_id'] = right_df[['p_id']]\
         .applymap(lambda s: f'p{int(s[1:])+max_left_pid+1}')
-    comb_df = pd.concat((left_df, right_df), axis=0).reset_index(drop=True)
+    comb_df = pd.concat((left_df, right_df), axis=0)
+    if drop_duplicates:
+        comb_df = comb_df.drop_duplicates(subset=['k', 'x', 'y', 'z'])
+    comb_df = comb_df.reset_index(drop=True)
     return comb_df
 
 

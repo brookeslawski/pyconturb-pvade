@@ -80,7 +80,7 @@ def test_con_iec_mn_std_dev():
     sim_turb_df = gen_turb(sim_spat_df, con_data={'con_spat_df': con_spat_df,
                                                   'con_turb_df': con_turb_df},
                            coh_model=coh_model, spc_model=spc_model,
-                           wsp_model=wsp_model, **kwargs)
+                           wsp_model=wsp_model, all_df=True, **kwargs)
     # then
     np.testing.assert_allclose(sig_theo, sim_turb_df.std(axis=0),
                                atol=0.01, rtol=0.50)  # std devs are close
@@ -89,3 +89,28 @@ def test_con_iec_mn_std_dev():
     np.testing.assert_allclose(con_turb_df.vxt_p0,
                                sim_turb_df.vxt_p0,
                                atol=0.01)  # regen'd const pt matches const
+
+
+def test_collocated_turb():
+    """if simulation point is collocated with constraint
+    """
+    # given
+    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 75,
+              'T': 300, 'dt': .25}
+    coh_model, spc_model, wsp_model = 'iec', 'kaimal', 'iec'
+    con_spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50]],
+                               columns=['k', 'p_id', 'x', 'y', 'z'])
+    con_turb_df = gen_turb(con_spat_df,
+                           coh_model=coh_model, spc_model=spc_model,
+                           wsp_model=wsp_model, **kwargs)
+    spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 30],
+                            ['vxt', 'p1', 0, 0, 50]],
+                           columns=['k', 'p_id', 'x', 'y', 'z'])
+    # when
+    turb_df = gen_turb(spat_df, con_data={'con_spat_df': con_spat_df,
+                                          'con_turb_df': con_turb_df},
+                       coh_model=coh_model, spc_model=spc_model,
+                       wsp_model=wsp_model, **kwargs)
+    # then
+    pd.testing.assert_series_equal(con_turb_df.vxt_p0, turb_df.vxt_p1,
+                                   check_names=False)

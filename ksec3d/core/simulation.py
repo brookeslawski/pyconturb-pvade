@@ -14,7 +14,7 @@ from .wind_profiles import get_wsp_profile
 
 def gen_turb(sim_spat_df, con_data=None,
              coh_model='iec', spc_model='kaimal', wsp_model='iec',
-             scale=True, seed=None, **kwargs):
+             scale=True, seed=None, all_df=False, **kwargs):
     """Generate constrained turbulence box
 
     Notes
@@ -23,6 +23,7 @@ def gen_turb(sim_spat_df, con_data=None,
     in the HAWC2 coordinate system. In particular, x is directed upwind, z is
     vertical up, and y is lateral to form a right-handed coordinate system.
     """
+    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
     # create empty constraint data if not passed in
     if con_data is None:
         constrained = False
@@ -35,6 +36,9 @@ def gen_turb(sim_spat_df, con_data=None,
         con_spat_df = con_data['con_spat_df']
         con_turb_df = con_data['con_turb_df']
         n_d = con_spat_df.shape[0]  # no. of constraints
+        if con_turb_df.shape[0] != n_t:
+            raise ValueError('Time values in keyword arguments do not ' +
+                             'match constraints')
 
     # combine data and sim spat_dfs
     all_spat_df = combine_spat_df(con_spat_df, sim_spat_df)  # all sim points
@@ -45,7 +49,6 @@ def gen_turb(sim_spat_df, con_data=None,
         one_point = True
 
     # intermediate variables
-    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
     n_f = n_t // 2 + 1  # no. freqs
     freq = np.arange(n_f) / kwargs['T']  # frequency array
     t = np.arange(n_t) * kwargs['dt']  # time array
@@ -56,8 +59,11 @@ def gen_turb(sim_spat_df, con_data=None,
 
     # get magnitudes of constraints and from theory
     conturb_fft = np.fft.rfft(con_turb_df.values, axis=0) / n_t  # constr fft
-    sim_mags = get_magnitudes(sim_spat_df, spc_model=spc_model,
-                              scale=scale, **kwargs)  # mags of sim points
+#    sim_mags = get_magnitudes(sim_spat_df, spc_model=spc_model,
+#                              scale=scale, **kwargs)  # mags of sim points
+    sim_mags = get_magnitudes(all_spat_df.iloc[n_d:, :],
+                              spc_model=spc_model, scale=scale,
+                              **kwargs)  # mags of sim points
     if constrained:
         con_mags = np.abs(conturb_fft)  # mags of constraints
         all_mags = np.concatenate((con_mags,
@@ -116,7 +122,8 @@ def gen_turb(sim_spat_df, con_data=None,
 
     # convert to time domain, add mean wind speed profile
     turb_t = np.fft.irfft(turb_fft, axis=0, n=n_t) * n_t
-    wsp_profile = get_wsp_profile(sim_spat_df, wsp_model=wsp_model, **kwargs)
+    wsp_profile = get_wsp_profile(all_spat_df.iloc[n_d:, :],
+                                  wsp_model=wsp_model, **kwargs)
     turb_t[:, n_d:] += wsp_profile
 
     # inverse fft and transpose to utilize pandas functions easier
@@ -125,7 +132,23 @@ def gen_turb(sim_spat_df, con_data=None,
                            columns=columns,
                            index=t)
 
-    return turb_df
+    # return either all the points or just the desired simulation points
+    if all_df:
+        out_df = turb_df
+    else:
+        out_df = pd.DataFrame(index=turb_df.index)
+        for i_sim in sim_spat_df.index:
+            k, p_id, x, y, z = sim_spat_df.loc[i_sim,
+                                               ['k', 'p_id', 'x', 'y', 'z']]
+            out_key = f'{k}_{p_id}'
+            turb_pid = all_spat_df[(all_spat_df.k == k) &
+                                   (all_spat_df.x == x) &
+                                   (all_spat_df.y == y) &
+                                   (all_spat_df.z == z)].p_id.values[0]
+            turb_key = f'{k}_{turb_pid}'
+            out_df[out_key] = turb_df[turb_key]
+
+    return out_df
 
 
 def get_magnitudes(spat_df,
