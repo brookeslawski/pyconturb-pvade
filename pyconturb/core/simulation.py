@@ -8,7 +8,7 @@ import pandas as pd
 
 from .coherence import get_coherence
 from .helpers import get_iec_sigk, spat_to_pair_df, combine_spat_df
-from .spectra import get_spectrum
+from .magnitudes import get_spectrum
 from .wind_profiles import get_wsp_profile
 
 
