@@ -187,3 +187,21 @@ def spat_to_pair_df(spat_df):
         jj.append(j)  # save index
 
     return pair_df
+
+
+def spc_to_mag(spc_df, spat_df, df, n_t, **kwargs):
+    """Convert spectral dataframe to magnitudes
+    """
+    mags_df = np.sqrt(spc_df * df / 2)
+    mags_df.iloc[0, :] = 0.  # set dc component to zero
+
+    if kwargs['scale']:
+        sum_magsq = 2 * (mags_df ** 2).sum(axis=0).values.reshape(1, -1)
+        sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
+        alpha = np.sqrt((n_t - 1) / n_t
+                        * (sig_k ** 2) / sum_magsq)  # scaling factor
+    else:
+        alpha = 1
+    mags_df = alpha * mags_df
+
+    return mags_df

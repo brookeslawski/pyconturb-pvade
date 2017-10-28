@@ -6,7 +6,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from .helpers import get_iec_sigk
+from .helpers import get_iec_sigk, spc_to_mag
 
 
 def get_magnitudes(spat_df, con_data=None,
@@ -21,70 +21,16 @@ def get_magnitudes(spat_df, con_data=None,
 
     # load magnitudes as desired
     if spc_model == 'kaimal':
-        spc_df = get_spectrum(spat_df, freq, spc_model=spc_model, **kwargs)
-        mags = np.sqrt(spc_df * df / 2)
-        mags.iloc[0, :] = 0.  # set dc component to zero
+        spc_df = get_kaimal_spectrum(spat_df, freq, **kwargs)
+        mags_df = spc_to_mag(spc_df, spat_df, df, n_t, **kwargs)
 
-        if kwargs['scale']:
-            sum_magsq = 2 * (mags ** 2).sum(axis=0).values.reshape(1, -1)
-            sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
-            alpha = np.sqrt((n_t - 1) / n_t
-                            * (sig_k ** 2) / sum_magsq)  # scaling factor
-        else:
-            alpha = 1
-        mags = alpha * mags
+    else:
+        raise ValueError(f'No such spc_model "{spc_model}"')
 
 #    elif spc_model == 'data':
 #        mags = get_data_magnitudes(spat_df, freq, con_data, **kwargs)
 
-    return mags
-
-
-def get_spectrum(spat_df, freq, con_data=None,
-                 spc_model='kaimal', **kwargs):
-    """Power spectrum for turbulent component and spatial location
-
-    Calls spectral-model-specific subfunctions.
-
-    Notes
-    -----
-    The spatial coordinate system is x positive to the right, z positive up,
-    and y positive downwind. The turbulence components are indexed such that u
-    is 0, v is 1, and w is 2.
-
-    Parameters
-    ----------
-    spat_df : pd.DataFrame
-        Pandas dataframe with spatial location/turbulence component information
-        necessary for spectral calculations. The dataframe must have the
-        following columns: k (turbulence component index), x, y, and z (spatial
-        coordinates).
-    freq : array_like
-        Frequency/ies at which to evaluate the spectral model.
-    spc_model : str, optional
-        Spectral model to use. Default is Kaimal spectrum.
-    kwargs : dict, optional
-        Keyword arguments for specific spectral model.
-
-    Returns
-    -------
-    spc_df : pd.DataFrame
-        Values of spectral model for specified spatial data and frequency.
-        Index is point, column is frequency.
-    """
-
-    if spc_model == 'kaimal':  # Kaimal spectral model
-        if 'ed' not in kwargs.keys():  # add IEC ed to kwargs if not passed in
-            kwargs['ed'] = 3
-        spc_df = get_kaimal_spectrum(spat_df, freq, **kwargs)
-
-    elif spc_model == 'data':
-        spc_df = get_data_spectrum(spat_df, con_data, **kwargs)
-
-    else:  # unknown coherence model
-        raise ValueError(f'Spectral model "{spc_model}" not recognized.')
-
-    return spc_df
+    return mags_df
 
 
 def get_kaimal_spectrum(spat_df, freq,
