@@ -10,9 +10,9 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.helpers import gen_spat_grid, get_iec_sigk, spat_to_pair_df,\
-                                combine_spat_df, h2t_to_uvw
-from ksec3d.core.simulation import gen_turb
+from pyconturb.core.helpers import gen_spat_grid, get_iec_sigk, \
+                                    spat_to_pair_df, combine_spat_df,\
+                                    h2t_to_uvw
 
 
 def test_gen_spat_grid():

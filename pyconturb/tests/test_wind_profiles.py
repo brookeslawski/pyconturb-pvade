@@ -10,7 +10,7 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.wind_profiles import get_wsp_profile
+from pyconturb.core.wind_profiles import get_wsp_profile
 
 
 def test_get_wsp_profile():

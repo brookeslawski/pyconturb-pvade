@@ -14,9 +14,9 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.simulation import gen_turb
-from ksec3d.core.helpers import gen_spat_grid, make_hawc2_input, df_to_hawc2
-from ksec3d.io.hawc2 import dat_to_df
+from pyconturb.core.simulation import gen_turb
+from pyconturb.core.helpers import gen_spat_grid, make_hawc2_input, df_to_hawc2
+from pyconturb.io.hawc2 import dat_to_df
 
 
 def test_binary_thru_hawc2():

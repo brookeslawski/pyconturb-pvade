@@ -12,9 +12,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from ksec3d.core.coherence import get_coherence, get_iec_coherence
-from ksec3d.core.helpers import gen_spat_grid, spat_to_pair_df
-from ksec3d.core.simulation import gen_turb
+from pyconturb.core.coherence import get_coherence, get_iec_coherence
+from pyconturb.core.helpers import gen_spat_grid, spat_to_pair_df
+from pyconturb.core.simulation import gen_turb
 
 
 def test_main_default():

@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Setup file for ksec3d package
+"""Setup file for PyConTurb
 
 To install, cd to directory with the setup.py file and then
 run following command in Anaconda prompt/terminal:
@@ -9,12 +9,12 @@ run following command in Anaconda prompt/terminal:
 
 from setuptools import setup
 
-setup(name='ksec3d',
+setup(name='pyconturb',
       version='0.1dev',
-      description='Kaimal spectrum with 3D exponential coherence',
-      url='https://gitlab.windenergy.dtu.dk/rink/ksec3d',
+      description='An open-source constrained turbulence generator',
+      url='https://gitlab.windenergy.dtu.dk/rink/pyconturb',
       author='Jenni Rinker',
       author_email='rink@dtu.dk',
       license='GNU GPL',
-      packages=['ksec3d'],
+      packages=['pyconturb'],
       zip_safe=False)

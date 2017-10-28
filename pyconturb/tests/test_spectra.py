@@ -10,7 +10,7 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.spectra import get_kaimal_spectrum
+from pyconturb.core.spectra import get_kaimal_spectrum
 
 
 def test_kaimal_value():

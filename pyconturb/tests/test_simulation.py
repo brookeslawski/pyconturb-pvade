@@ -10,8 +10,8 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
-from ksec3d.core.simulation import gen_turb, get_magnitudes
-from ksec3d.core.helpers import gen_spat_grid
+from pyconturb.core.simulation import gen_turb, get_magnitudes
+from pyconturb.core.helpers import gen_spat_grid
 
 
 def test_iec_mags_sum():
