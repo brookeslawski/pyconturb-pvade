@@ -59,8 +59,6 @@ def gen_turb(sim_spat_df, con_data=None,
 
     # get magnitudes of constraints and from theory
     conturb_fft = np.fft.rfft(con_turb_df.values, axis=0) / n_t  # constr fft
-#    sim_mags = get_magnitudes(sim_spat_df, spc_model=spc_model,
-#                              scale=scale, **kwargs)  # mags of sim points
     sim_mags = get_magnitudes(all_spat_df.iloc[n_d:, :],
                               spc_model=spc_model, scale=scale,
                               **kwargs)  # mags of sim points
@@ -151,24 +149,32 @@ def gen_turb(sim_spat_df, con_data=None,
     return out_df
 
 
-def get_magnitudes(spat_df,
-                   spc_model='kaimal', scale=True, **kwargs):
+def get_magnitudes(spat_df, con_data=None,
+                   spc_model='kaimal', **kwargs):
     """Create dataframe of unconstrained magnitudes with desired power spectra
     """
+    # define useful parameters
     n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
     n_f = n_t // 2 + 1
     df = 1 / kwargs['T']
     freq = np.arange(n_f) * df
-    spc_df = get_spectrum(spat_df, freq, spc_model=spc_model, **kwargs)
-    mags = np.sqrt(spc_df * df / 2)
-    mags.iloc[0, :] = 0.  # set dc component to zero
 
-    if scale:
-        sum_magsq = 2 * (mags ** 2).sum(axis=0).values.reshape(1, -1)
-        sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
-        alpha = np.sqrt((n_t - 1) / n_t
-                        * (sig_k ** 2) / sum_magsq)  # scaling factor
-    else:
-        alpha = 1
+    # load magnitudes as desired
+    if spc_model == 'kaimal':
+        spc_df = get_spectrum(spat_df, freq, spc_model=spc_model, **kwargs)
+        mags = np.sqrt(spc_df * df / 2)
+        mags.iloc[0, :] = 0.  # set dc component to zero
 
-    return alpha * mags
+        if kwargs['scale']:
+            sum_magsq = 2 * (mags ** 2).sum(axis=0).values.reshape(1, -1)
+            sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
+            alpha = np.sqrt((n_t - 1) / n_t
+                            * (sig_k ** 2) / sum_magsq)  # scaling factor
+        else:
+            alpha = 1
+        mags = alpha * mags
+
+#    elif spc_model == 'data':
+#        mags = get_data_magnitudes(spat_df, freq, con_data, **kwargs)
+
+    return mags

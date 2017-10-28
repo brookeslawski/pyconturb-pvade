@@ -9,7 +9,7 @@ import pandas as pd
 from .helpers import get_iec_sigk
 
 
-def get_spectrum(spat_df, freq,
+def get_spectrum(spat_df, freq, con_data=None,
                  spc_model='kaimal', **kwargs):
     """Power spectrum for turbulent component and spatial location
 
@@ -47,6 +47,9 @@ def get_spectrum(spat_df, freq,
             kwargs['ed'] = 3
         spc_df = get_kaimal_spectrum(spat_df, freq, **kwargs)
 
+    elif spc_model == 'data':
+        spc_df = get_data_spectrum(spat_df, con_data, **kwargs)
+
     else:  # unknown coherence model
         raise ValueError(f'Spectral model "{spc_model}" not recognized.')
 
@@ -67,12 +70,12 @@ def get_kaimal_spectrum(spat_df, freq,
     freq : array_like
         Frequencies for which to evaluate coherence.
     kwargs : dictionary
-        Other variables specific to this coherence model.
+        Other variables specific to this spectral model.
 
     Returns
     -------
-    coh_df : pd.DataFrame
-        Values of coherence model for specified spatial data and frequency.
+    spc_df : pd.DataFrame
+        Values of spectral model for specified spatial data and frequency.
         Index is point, column is frequency.
     """
 
