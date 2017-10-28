@@ -16,37 +16,25 @@ import pandas as pd
 _spat_colnames = ['k', 'p_id', 'x', 'y', 'z']
 
 
-def gen_spat_grid(y, z):
-    """Generate spat_df (all turbulent components and grid defined by x and z)
-
-    Notes
-    -----
-    This coordinate system is aligned with HAWC2's turbulence coordinate
-    system. In other words, x is directed upwind, z is vertical, and y is
-    lateral according to a right-hand coordinate system.
+def combine_spat_df(left_df, right_df,
+                    drop_duplicates=True):
+    """combine two spatial dataframes, changing point index of right_df
     """
-    ys, zs = np.meshgrid(y, z)
-    ks = np.array(['vxt', 'vyt', 'vzt'])
-    xs = np.zeros_like(ys)
-    ps = [f'p{i:.0f}' for i in np.arange(xs.size)]
-    spat_arr = np.vstack((np.tile(ks, xs.size),
-                          np.repeat(ps, ks.size),
-                          np.repeat(xs.T.reshape(-1), ks.size),
-                          np.repeat(ys.T.reshape(-1), ks.size),
-                          np.repeat(zs.T.reshape(-1), ks.size))).T
-    spat_df = pd.DataFrame(spat_arr,
-                           columns=_spat_colnames)
-    spat_df[['x', 'y', 'z']] = spat_df[['x', 'y', 'z']].astype(float)
-    return spat_df
+    if left_df.size == 0:
+        return right_df.copy()
+    if right_df.size == 0:
+        return left_df.copy()
+    left_df = left_df.copy()  # don't want to overwrite original dataframes
+    right_df = right_df.copy()
 
-
-def get_iec_sigk(spat_df, **kwargs):
-    """get sig_k for iec
-    """
-    sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
-    sig_k = sig * (1.0 * (spat_df.k == 'vxt') + 0.8 * (spat_df.k == 'vyt') +
-                   0.5 * (spat_df.k == 'vzt')).values
-    return sig_k
+    max_left_pid = int(left_df[['p_id']].applymap(lambda s: int(s[1:])).max())
+    right_df['p_id'] = right_df[['p_id']]\
+        .applymap(lambda s: f'p{int(s[1:])+max_left_pid+1}')
+    comb_df = pd.concat((left_df, right_df), axis=0)
+    if drop_duplicates:
+        comb_df = comb_df.drop_duplicates(subset=['k', 'x', 'y', 'z'])
+    comb_df = comb_df.reset_index(drop=True)
+    return comb_df
 
 
 def df_to_hawc2(turb_df, spat_df, path):
@@ -87,6 +75,52 @@ def df_to_hawc2(turb_df, spat_df, path):
             turb.astype(np.dtype('<f')).tofile(bin_fid)
 
     return
+
+
+def get_iec_sigk(spat_df, **kwargs):
+    """get sig_k for iec
+    """
+    sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
+    sig_k = sig * (1.0 * (spat_df.k == 'vxt') + 0.8 * (spat_df.k == 'vyt') +
+                   0.5 * (spat_df.k == 'vzt')).values
+    return sig_k
+
+
+def gen_spat_grid(y, z):
+    """Generate spat_df (all turbulent components and grid defined by x and z)
+
+    Notes
+    -----
+    This coordinate system is aligned with HAWC2's turbulence coordinate
+    system. In other words, x is directed upwind, z is vertical, and y is
+    lateral according to a right-hand coordinate system.
+    """
+    ys, zs = np.meshgrid(y, z)
+    ks = np.array(['vxt', 'vyt', 'vzt'])
+    xs = np.zeros_like(ys)
+    ps = [f'p{i:.0f}' for i in np.arange(xs.size)]
+    spat_arr = np.vstack((np.tile(ks, xs.size),
+                          np.repeat(ps, ks.size),
+                          np.repeat(xs.T.reshape(-1), ks.size),
+                          np.repeat(ys.T.reshape(-1), ks.size),
+                          np.repeat(zs.T.reshape(-1), ks.size))).T
+    spat_df = pd.DataFrame(spat_arr,
+                           columns=_spat_colnames)
+    spat_df[['x', 'y', 'z']] = spat_df[['x', 'y', 'z']].astype(float)
+    return spat_df
+
+
+def h2t_to_uvw(turb_df):
+    """convert turbulence dataframe with hawc2 turbulence coord sys to uvw
+    """
+    comp_tups = [('vxt', 'u', -1), ('vyt', 'v', -1), ('vzt', 'w', 1)]
+    new_turb_df = pd.DataFrame(index=turb_df.index)
+    for comp_h2t, comp_uvw, sign in comp_tups:
+        old_cols = [s for s in turb_df.columns if comp_h2t in s]
+        new_cols = [s.replace(comp_h2t, comp_uvw) for s in old_cols]
+        new_turb_df[new_cols] = sign * turb_df.loc[:, old_cols]
+
+    return new_turb_df
 
 
 def make_hawc2_input(turb_dir, spat_df, **kwargs):
@@ -153,37 +187,3 @@ def spat_to_pair_df(spat_df):
         jj.append(j)  # save index
 
     return pair_df
-
-
-def combine_spat_df(left_df, right_df,
-                    drop_duplicates=True):
-    """combine two spatial dataframes, changing point index of right_df
-    """
-    if left_df.size == 0:
-        return right_df.copy()
-    if right_df.size == 0:
-        return left_df.copy()
-    left_df = left_df.copy()  # don't want to overwrite original dataframes
-    right_df = right_df.copy()
-
-    max_left_pid = int(left_df[['p_id']].applymap(lambda s: int(s[1:])).max())
-    right_df['p_id'] = right_df[['p_id']]\
-        .applymap(lambda s: f'p{int(s[1:])+max_left_pid+1}')
-    comb_df = pd.concat((left_df, right_df), axis=0)
-    if drop_duplicates:
-        comb_df = comb_df.drop_duplicates(subset=['k', 'x', 'y', 'z'])
-    comb_df = comb_df.reset_index(drop=True)
-    return comb_df
-
-
-def h2t_to_uvw(turb_df):
-    """convert turbulence dataframe with hawc2 turbulence coord sys to uvw
-    """
-    comp_tups = [('vxt', 'u', -1), ('vyt', 'v', -1), ('vzt', 'w', 1)]
-    new_turb_df = pd.DataFrame(index=turb_df.index)
-    for comp_h2t, comp_uvw, sign in comp_tups:
-        old_cols = [s for s in turb_df.columns if comp_h2t in s]
-        new_cols = [s.replace(comp_h2t, comp_uvw) for s in old_cols]
-        new_turb_df[new_cols] = sign * turb_df.loc[:, old_cols]
-
-    return new_turb_df
