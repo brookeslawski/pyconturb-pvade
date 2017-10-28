@@ -7,8 +7,8 @@ import numpy as np
 import pandas as pd
 
 from .coherence import get_coherence
-from .helpers import get_iec_sigk, spat_to_pair_df, combine_spat_df
-from .magnitudes import get_spectrum
+from .helpers import spat_to_pair_df, combine_spat_df
+from .magnitudes import get_magnitudes
 from .wind_profiles import get_wsp_profile
 
 
@@ -147,34 +147,3 @@ def gen_turb(sim_spat_df, con_data=None,
             out_df[out_key] = turb_df[turb_key]
 
     return out_df
-
-
-def get_magnitudes(spat_df, con_data=None,
-                   spc_model='kaimal', **kwargs):
-    """Create dataframe of unconstrained magnitudes with desired power spectra
-    """
-    # define useful parameters
-    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
-    n_f = n_t // 2 + 1
-    df = 1 / kwargs['T']
-    freq = np.arange(n_f) * df
-
-    # load magnitudes as desired
-    if spc_model == 'kaimal':
-        spc_df = get_spectrum(spat_df, freq, spc_model=spc_model, **kwargs)
-        mags = np.sqrt(spc_df * df / 2)
-        mags.iloc[0, :] = 0.  # set dc component to zero
-
-        if kwargs['scale']:
-            sum_magsq = 2 * (mags ** 2).sum(axis=0).values.reshape(1, -1)
-            sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
-            alpha = np.sqrt((n_t - 1) / n_t
-                            * (sig_k ** 2) / sum_magsq)  # scaling factor
-        else:
-            alpha = 1
-        mags = alpha * mags
-
-#    elif spc_model == 'data':
-#        mags = get_data_magnitudes(spat_df, freq, con_data, **kwargs)
-
-    return mags
