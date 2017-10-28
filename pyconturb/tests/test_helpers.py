@@ -12,7 +12,22 @@ import pandas as pd
 
 from pyconturb.core.helpers import gen_spat_grid, get_iec_sigk, \
                                     spat_to_pair_df, combine_spat_df,\
-                                    h2t_to_uvw
+                                    h2t_to_uvw, complex_interp
+
+
+def test_complex_interp():
+    """interpolation of complex pandas dataframes
+    """
+    # given
+    in_df = pd.DataFrame([[0 + 0j], [np.nan], [3 + 3j]],
+                         index=[0, 1, 3], columns=['a'])
+    theo_df = pd.DataFrame([[0 + 0j], [1 + 1j], [3 + 3j]],
+                           index=[0, 1, 3], columns=['a'],
+                           dtype=complex)
+    # when
+    res_df = complex_interp(in_df, method='index')
+    # then
+    pd.testing.assert_frame_equal(res_df, theo_df)
 
 
 def test_gen_spat_grid():

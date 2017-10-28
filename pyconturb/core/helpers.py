@@ -37,6 +37,18 @@ def combine_spat_df(left_df, right_df,
     return comb_df
 
 
+def complex_interp(df, **kwargs):
+    """linearly interpolate NaNs in a complex dataframe (pandas method broken)
+    """
+    re = pd.DataFrame(index=df.index, columns=df.columns)
+    imag = pd.DataFrame(index=df.index, columns=df.columns)
+    re[:] = np.real(df)
+    imag[:] = np.imag(df)
+    re.iloc[np.isnan(df).values] = np.nan
+    imag.iloc[np.isnan(df).values] = np.nan
+    return re.interpolate(**kwargs) + 1j * imag.interpolate(**kwargs)
+
+
 def df_to_hawc2(turb_df, spat_df, path):
     """ksec3d-style turbulence dataframe to binary files for hawc2
 
