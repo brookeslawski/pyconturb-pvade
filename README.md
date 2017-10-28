@@ -1,8 +1,8 @@
-# Constrained Turbulence Simulations based on the KSEC Method
+# PyConTurb: Constrained Stochastic Turbulence for Wind Energy Applications
 
-This repository contains a package to simulate constrained stochastic
-atmospheric turbulence for wind energy applications with any desired
-three-dimensional (3D) spectral or coherence model.
+This Python package uses a novel method to generate stochastic turbulence boxes
+that are constrained by one or more measured time series. A paper detailing
+the simulation methodology will be submitted to Wind Energy.
 
 ## To install the code
 
@@ -14,23 +14,10 @@ Follow these instructions to install the package:
 3. `pip install -e . `
 
 
-## Background
-
-There are two main contributions of the code in this repository:
-1. Easy and rapid simulation of constrained turbulence
-2. Ability to simulate with custom, 3D spectral and coherence models.
-
-### Constrained turbulence
+## Constrained or unconstrained turbulence
 
 The main function, `gen_turb` can be used with or without constraining time
 series.
-
-### 3D coherence
-
-The method prescribed in IEC 61400-1 Ed. 3 recommends only coherence in the
-longitudinal direction, which is of course not accurate. This code presents
-a way to expand that to include coherence between the lateral and vertical 
-directions and also between different components.
  
 ## Examples
 
