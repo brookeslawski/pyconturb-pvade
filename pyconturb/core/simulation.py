@@ -14,7 +14,7 @@ from .wind_profiles import get_wsp_profile
 
 def gen_turb(sim_spat_df, con_data=None,
              coh_model='iec', spc_model='kaimal', wsp_model='iec',
-             scale=True, seed=None, all_df=False, **kwargs):
+             seed=None, all_df=False, **kwargs):
     """Generate constrained turbulence box
 
     Notes
@@ -60,7 +60,8 @@ def gen_turb(sim_spat_df, con_data=None,
     # get magnitudes of constraints and from theory
     conturb_fft = np.fft.rfft(con_turb_df.values, axis=0) / n_t  # constr fft
     sim_mags = get_magnitudes(all_spat_df.iloc[n_d:, :],
-                              spc_model=spc_model, scale=scale,
+                              con_data=con_data,
+                              spc_model=spc_model,
                               **kwargs)  # mags of sim points
     if constrained:
         con_mags = np.abs(conturb_fft)  # mags of constraints

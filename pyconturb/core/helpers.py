@@ -98,7 +98,7 @@ def get_iec_sigk(spat_df, **kwargs):
     return sig_k
 
 
-def gen_spat_grid(y, z):
+def gen_spat_grid(y, z, comps=['vxt', 'vyt', 'vzt']):
     """Generate spat_df (all turbulent components and grid defined by x and z)
 
     Notes
@@ -108,7 +108,7 @@ def gen_spat_grid(y, z):
     lateral according to a right-hand coordinate system.
     """
     ys, zs = np.meshgrid(y, z)
-    ks = np.array(['vxt', 'vyt', 'vzt'])
+    ks = np.array(comps)
     xs = np.zeros_like(ys)
     ps = [f'p{i:.0f}' for i in np.arange(xs.size)]
     spat_arr = np.vstack((np.tile(ks, xs.size),
@@ -204,6 +204,8 @@ def spat_to_pair_df(spat_df):
 def spc_to_mag(spc_df, spat_df, df, n_t, **kwargs):
     """Convert spectral dataframe to magnitudes
     """
+    if 'scale' not in kwargs.keys():
+        raise ValueError('Missing keyword argument "scale"!')
     mags_df = np.sqrt(spc_df * df / 2)
     mags_df.iloc[0, :] = 0.  # set dc component to zero
 

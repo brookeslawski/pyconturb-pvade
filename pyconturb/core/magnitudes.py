@@ -26,30 +26,68 @@ def get_data_magnitudes(spat_df, freq, con_data, **kwargs):
 
     Returns
     -------
-    spc_df : pd.DataFrame
+    mag_df : pd.DataFrame
         Values of spectral model for specified spatial data and frequency.
         Index is point, column is frequency.
     """
+    # pull out con data for easier access later
     con_spat_df, con_turb_df = con_data['con_spat_df'], con_data['con_turb_df']
-    mags_df = pd.DataFrame(index=freq, columns=spat_df.k + '_' + spat_df.p_id)
-    con_fft_df = pd.DataFrame(np.fft.rfft(con_turb_df, axis=0),
-                              index=freq,
-                              columns=con_spat_df.k + '_' +
-                              con_spat_df.p_id)
+
+    # check that all components requested have 1+ constraint given
+    if set(spat_df.k) - set(con_spat_df.k):
+        raise ValueError('Cannot interpolate component with no data!')
+
+    # also check that interp method is given
+    if 'method' not in kwargs.keys():
+        raise ValueError('Missing key "method" for data interpolation!')
+
+    # initialize the output magnitude dataframe
+    mags_df = pd.DataFrame(index=freq, columns=spat_df.k + '_' + spat_df.p_id,
+                           dtype=float)
+
+    # interpolate by vertical height
     if kwargs['method'] == 'z_interp':
+
+        # calculate the df with the constraining magnitudes, linearly averaging
+        # any magnitudes of the same turb component at the same vertical height
+        uniq_spat_df = pd.DataFrame(columns=con_spat_df.columns)
+        uniq_mag_df = pd.DataFrame(index=freq)
+        for k in con_spat_df.k.unique():
+            for z in con_spat_df[con_spat_df.k == k].z.unique():
+                sub_spat_df = con_spat_df[(con_spat_df.k == k) &
+                                          (con_spat_df.z == z)]
+                uniq_spat_df = uniq_spat_df.append(sub_spat_df.iloc[0, :])
+                sub_pids = sub_spat_df.k + '_' + sub_spat_df.p_id
+                sub_turb_df = con_turb_df[sub_pids]
+                mag_mean = np.abs(np.fft.rfft(sub_turb_df,
+                                              axis=0)).mean(axis=1)
+                uniq_mag_df[sub_pids.values[0]] = mag_mean
+
+        # loop through each component
         for k in spat_df.k.unique():
-            con_pids = con_spat_df[con_spat_df.k == k].p_id
-            new_pids = spat_df[spat_df.k == k].p_id
-            con_zs = con_spat_df[con_spat_df.k == k].z
-            intp_df = con_fft_df[k + '_' + con_pids].T
-            intp_df.index = con_zs
-            new_zs = pd.Index(spat_df[spat_df.k == k].z, dtype=float)
-            new_idx = intp_df.index.union(new_zs)
-            intp_res = complex_interp(intp_df.reindex(new_idx),
-                                      method='values').loc[new_zs]
-            mags_df[k + '_' + new_pids] = intp_res.T.values
+
+            # get magnitudes for interpolation
+            sub_spat_df = uniq_spat_df[uniq_spat_df.k == k]  # con pts for k
+            sub_ptnms = sub_spat_df.k + '_' + sub_spat_df.p_id  # con pt names
+            sub_mag_df = uniq_mag_df[sub_ptnms]  # mags for those con pts
+
+            # create dataframe for interpolating
+            intp_df = sub_mag_df.T
+            intp_df.index = sub_spat_df.z
+
+            # add rows for new values and interpolate them
+            sim_zs = spat_df[spat_df.k == k].z
+            comb_idx = intp_df.index.union(set(sim_zs))
+            intp_df = intp_df.reindex(comb_idx).interpolate(method='values')\
+                .fillna(method='bfill')
+            res_df = intp_df.loc[sim_zs, :].T
+
+            # assign values to mags_df
+            mags_df[k + '_' + spat_df[spat_df.k == k].p_id] = res_df.values
+
     else:
         raise ValueError('Method is not defined!')
+    mags_df = mags_df / con_turb_df.shape[0]
     return mags_df
 
 
@@ -85,7 +123,7 @@ def get_kaimal_spectrum(spat_df, freq,
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
     freq = np.asarray(freq).reshape(1, -1)  # need this to be a row vector
-    spc_df = pd.DataFrame(0, index=np.arange(spat_df.shape[0]),
+    spc_df = pd.DataFrame(0, index=spat_df.k + '_' + spat_df.p_id,
                           columns=freq.reshape(-1))  # initialize to zeros
 
     # assign/calculate intermediate variables
