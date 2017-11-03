@@ -97,20 +97,22 @@ def test_collocated_turb():
     # given
     kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 75,
               'T': 300, 'dt': .25, 'scale': True}
-    coh_model, spc_model, wsp_model = 'iec', 'kaimal', 'iec'
+    coh_model, spc_model = 'iec', 'kaimal'
     con_spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50]],
                                columns=['k', 'p_id', 'x', 'y', 'z'])
     con_turb_df = gen_turb(con_spat_df,
                            coh_model=coh_model, spc_model=spc_model,
-                           wsp_model=wsp_model, **kwargs)
+                           wsp_model='iec', **kwargs)
     spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 30],
                             ['vxt', 'p1', 0, 0, 50]],
                            columns=['k', 'p_id', 'x', 'y', 'z'])
+    theory = con_turb_df.vxt_p0 - con_turb_df.vxt_p0.mean()
     # when
     turb_df = gen_turb(spat_df, con_data={'con_spat_df': con_spat_df,
                                           'con_turb_df': con_turb_df},
                        coh_model=coh_model, spc_model=spc_model,
-                       wsp_model=wsp_model, **kwargs)
+                       wsp_model='none', **kwargs)
+    test = turb_df.vxt_p1
     # then
-    pd.testing.assert_series_equal(con_turb_df.vxt_p0, turb_df.vxt_p1,
+    pd.testing.assert_series_equal(theory, test,
                                    check_names=False)
