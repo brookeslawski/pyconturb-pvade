@@ -14,7 +14,7 @@ from .wind_profiles import get_wsp_profile
 
 def gen_turb(sim_spat_df, con_data=None,
              coh_model='iec', spc_model='kaimal', wsp_model='iec',
-             seed=None, all_df=False, **kwargs):
+             seed=None, **kwargs):
     """Generate constrained turbulence box
 
     Notes
@@ -116,14 +116,8 @@ def gen_turb(sim_spat_df, con_data=None,
         # calculate and save correlated Fourier components
         turb_fft.iloc[i_f, :] = cor_pha
 
-    # add back in zero-frequency components
-    turb_fft.iloc[0, :n_d] = conturb_fft[0, :]
-
     # convert to time domain, add mean wind speed profile
     turb_t = np.fft.irfft(turb_fft, axis=0, n=n_t) * n_t
-    wsp_profile = get_wsp_profile(all_spat_df.iloc[n_d:, :],
-                                  wsp_model=wsp_model, **kwargs)
-    turb_t[:, n_d:] += wsp_profile
 
     # inverse fft and transpose to utilize pandas functions easier
     columns = (all_spat_df.k + '_' + all_spat_df.p_id).values
@@ -132,19 +126,21 @@ def gen_turb(sim_spat_df, con_data=None,
                            index=t)
 
     # return either all the points or just the desired simulation points
-    if all_df:
-        out_df = turb_df
-    else:
-        out_df = pd.DataFrame(index=turb_df.index)
-        for i_sim in sim_spat_df.index:
-            k, p_id, x, y, z = sim_spat_df.loc[i_sim,
-                                               ['k', 'p_id', 'x', 'y', 'z']]
-            out_key = f'{k}_{p_id}'
-            turb_pid = all_spat_df[(all_spat_df.k == k) &
-                                   (all_spat_df.x == x) &
-                                   (all_spat_df.y == y) &
-                                   (all_spat_df.z == z)].p_id.values[0]
-            turb_key = f'{k}_{turb_pid}'
-            out_df[out_key] = turb_df[turb_key]
+    out_df = pd.DataFrame(index=turb_df.index)
+    for i_sim in sim_spat_df.index:
+        k, p_id, x, y, z = sim_spat_df.loc[i_sim,
+                                           ['k', 'p_id', 'x', 'y', 'z']]
+        out_key = f'{k}_{p_id}'
+        turb_pid = all_spat_df[(all_spat_df.k == k) &
+                               (all_spat_df.x == x) &
+                               (all_spat_df.y == y) &
+                               (all_spat_df.z == z)].p_id.values[0]
+        turb_key = f'{k}_{turb_pid}'
+        out_df[out_key] = turb_df[turb_key]
+
+    # add in mean wind speed according to specified profile
+    wsp_profile = get_wsp_profile(sim_spat_df,
+                                  wsp_model=wsp_model, **kwargs)
+    out_df[:] += wsp_profile
 
     return out_df

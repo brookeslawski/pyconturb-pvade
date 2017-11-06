@@ -71,16 +71,16 @@ def test_con_iec_mn_std_dev():
                            spc_model=spc_model,
                            wsp_model=wsp_model, **kwargs)
     # given -- simulated, constrainted turbulence
-    y, z = 0, 72
+    y, z = 0, [70, 72]
     sim_spat_df = gen_spat_grid(y, z)
-    sig_theo = np.array([1.834, 1.834, 1.4672, 0.917])
-    u_theo = np.array([-10, -10.05650077210035, 0, 0])
+    sig_theo = np.tile([1.834, 1.4672, 0.917], 2)  # sig_u, sig_v, sig_w
+    u_theo = np.array([-10, 0, 0, -10.05650077210035, 0, 0])  # U1, ... U2, ...
 
     # when
     sim_turb_df = gen_turb(sim_spat_df, con_data={'con_spat_df': con_spat_df,
                                                   'con_turb_df': con_turb_df},
                            coh_model=coh_model, spc_model=spc_model,
-                           wsp_model=wsp_model, all_df=True, **kwargs)
+                           wsp_model=wsp_model, **kwargs)
     # then
     np.testing.assert_allclose(sig_theo, sim_turb_df.std(axis=0),
                                atol=0.01, rtol=0.50)  # std devs are close
