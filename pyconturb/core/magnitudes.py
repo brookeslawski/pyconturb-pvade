@@ -6,7 +6,7 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from .helpers import get_iec_sigk, spc_to_mag, complex_interp
+from .helpers import get_iec_sigk, spc_to_mag
 
 
 def get_data_magnitudes(spat_df, freq, con_data, **kwargs):
@@ -88,32 +88,13 @@ def get_data_magnitudes(spat_df, freq, con_data, **kwargs):
     else:
         raise ValueError('Method is not defined!')
     mags_df = mags_df / con_turb_df.shape[0]
-    return mags_df
+    return mags_df.values
 
 
 def get_kaimal_spectrum(spat_df, freq,
                         **kwargs):
-    """One-sided, continuous Kaimal spectrum
-
-    Parameters
-    ----------
-    spat_df : pd.DataFrame
-        Pandas dataframe with spatial location/turbulence component information
-        that is necessary for coherence calculations. The dataframe must have
-        the following columns: k (turbulence component index), x, y, and z
-        (spatial coordinates).
-    freq : array_like
-        Frequencies for which to evaluate coherence.
-    kwargs : dictionary
-        Other variables specific to this spectral model.
-
-    Returns
-    -------
-    spc_df : pd.DataFrame
-        Values of spectral model for specified spatial data and frequency.
-        Index is point, column is frequency.
+    """Get Kaimal spectrum for given locations/components and frequencies
     """
-
     if 'ed' not in kwargs.keys():
         warnings.warn('No IEC edition specified -- assuming Ed. 3')
         kwargs['ed'] = 3
@@ -122,31 +103,24 @@ def get_kaimal_spectrum(spat_df, freq,
     if any([k not in kwargs.keys() for k in ['v_hub', 'i_ref']]):
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
-    freq = np.asarray(freq).reshape(1, -1)  # need this to be a row vector
-    spc_df = pd.DataFrame(0, index=spat_df.k + '_' + spat_df.p_id,
-                          columns=freq.reshape(-1))  # initialize to zeros
+    comps = spat_df.k.values
+    z = spat_df.z.values
+    freq = np.asarray(freq).reshape(-1, 1)  # need this to be a col vector
+    lambda_1 = 0.7 * z * (z < 60) + 42 * (z >= 60)
+    l_k = 8.1 * lambda_1 * (comps == 'vxt') + \
+        2.7 * lambda_1 * (comps == 'vyt') + \
+        0.66 * lambda_1 * (comps == 'vzt')
+    sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
+    tau = (l_k / kwargs['v_hub']).reshape(1, -1)  # L_k / U
 
-    # assign/calculate intermediate variables
-    spat_df = spat_df.copy()
-    spat_df['lambda_1'] = 0.7 * spat_df.mask(spat_df.z > 60, other=0).z + \
-        42 * np.sign(spat_df.mask(spat_df.z <= 60, other=0).z)
-    l_k = 8.1 * spat_df.mask(spat_df.k != 'vxt', other=0).lambda_1 + \
-        2.7 * spat_df.mask(spat_df.k != 'vyt', other=0).lambda_1 + \
-        0.66 * spat_df.mask(spat_df.k != 'vzt', other=0).lambda_1  # lngth scl
-    sig_k = get_iec_sigk(spat_df, **kwargs).reshape(-1, 1)
-    tau = (l_k / kwargs['v_hub']).values.reshape(-1, 1)  # L_k / U
-
-    spc_df[:] = (sig_k**2) * (4 * tau) / \
+    spc_np = (sig_k**2) * (4 * tau) / \
         np.power(1. + 6 * tau * freq, 5. / 3.)  # Kaimal 1972
-    spc_df = spc_df.T  # put frequency along rows
 
-    return spc_df
+    return spc_np
 
 
 def get_magnitudes(spat_df, con_data=None,
                    spc_model='kaimal', **kwargs):
-    """Create dataframe of unconstrained magnitudes with desired power spectra
-    """
     # define useful parameters
     n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
     n_f = n_t // 2 + 1
@@ -155,13 +129,13 @@ def get_magnitudes(spat_df, con_data=None,
 
     # load magnitudes as desired
     if spc_model == 'kaimal':
-        spc_df = get_kaimal_spectrum(spat_df, freq, **kwargs)
-        mags_df = spc_to_mag(spc_df, spat_df, df, n_t, **kwargs)
+        spc_np = get_kaimal_spectrum(spat_df, freq, **kwargs)
+        mags_np = spc_to_mag(spc_np, spat_df, df, n_t, **kwargs)
 
     elif spc_model == 'data':
-        mags_df = get_data_magnitudes(spat_df, freq, con_data, **kwargs)
+        mags_np = get_data_magnitudes(spat_df, freq, con_data, **kwargs)
 
     else:
         raise ValueError(f'No such spc_model "{spc_model}"')
 
-    return mags_df
+    return mags_np

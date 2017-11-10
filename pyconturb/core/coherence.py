@@ -1,99 +1,51 @@
 # -*- coding: utf-8 -*-
 """Functions related to definition of coherence models
 """
+import itertools
 
 import numpy as np
-import pandas as pd
 
 
-def get_coherence(pair_df, freq,
-                  coh_model='iec', **kwargs):
-    """KSEC-3D coherence function
-
-    Calls coherence-model-specific subfunctions.
-
-    Notes
-    -----
-    The spatial coordinate system is x positive to the right, z positive up,
-    and y positive downwind. The turbulence components are indexed such that u
-    is 0, v is 1, and w is 2.
-
-    Parameters
-    ----------
-    pair_df : pd.DataFrame
-        Pandas dataframe with spatial location/turbulence component information
-        that is necessary for coherence calculations. The dataframe must have
-        the following columns: k1 (turbulence component at point 1), x1, y1,
-        z1 (spatial coordinates of point 1), k2 (turbulence component at point
-        2), x2, y2, and z2 (spatial coordinates of point 2).
-    freq : array_like
-        Frequencies at which to evaluate coherence.
-    coh_model : str, optional
-        Coherence model to use. Default is IEC Ed. 3.
-    kwargs : dict
-        Keyword arguments for specified coherence model.
-
-    Returns
-    -------
-    coh_df : pd.DataFrame
-        Values of coherence model for specified spatial data and frequency.
+def get_coh_mat(freq, spat_df, coh_model='iec',
+                **kwargs):
+    """Create coherence matrix for given frequencies and coherence model
     """
-
     if coh_model == 'iec':  # IEC coherence model
         if 'ed' not in kwargs.keys():  # add IEC ed to kwargs if not passed in
             kwargs['ed'] = 3
-        coh_df = get_iec_coherence(pair_df, freq, **kwargs)
+        coh_mat = get_iec_coh_mat(freq, spat_df, **kwargs)
 
     else:  # unknown coherence model
         raise ValueError(f'Coherence model "{coh_model}" not recognized.')
 
-    return coh_df
+    return coh_mat
 
 
-def get_iec_coherence(pair_df, freq,
-                      **kwargs):
-    """Exponential coherence specified in IEC 61400-1
-
-    Notes
-    -----
-    The spatial coordinate system is x positive to the right, z positive up,
-    and y positive downwind.
-
-    Parameters
-    ----------
-    pair_df : pd.DataFrame
-        Pandas dataframe with spatial location/turbulence component information
-        that is necessary for coherence calculations. The dataframe must have
-        the following columns: k1 (turbulence component at point 1), x1, y1,
-        z1 (spatial coordinates of point 1), k2 (turbulence component at point
-        2), x2, y2, and z2 (spatial coordinates of point 2).
-    freq : array_like
-        Frequencies for which to evaluate coherence.
-    kwargs : dictionary
-        Other variables specific to this coherence model.
-
-    Returns
-    -------
-    coh_df : pd.DataFrame
-        Values of coherence model for specified spatial data and frequency.
-        Index is the pair of spatial components and columns are frequency.
+def get_iec_coh_mat(freq, spat_df,
+                    **kwargs):
+    """Create IEC 61400-1 Ed. 3 coherence matrix for given frequencies
     """
-
     if kwargs['ed'] != 3:  # only allow edition 3
         raise ValueError('Only edition 3 is permitted.')
     if any([k not in kwargs.keys() for k in ['v_hub', 'l_c']]):  # check kwargs
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
-    freq = np.asarray(freq).reshape(-1, 1)  # need this to be a col vector
-    coh_df = pd.DataFrame(0, index=freq.reshape(-1),
-                          columns=range(pair_df.shape[0]))  # init as zeros
-
-    r = np.sqrt((pair_df.y1 - pair_df.y2)**2 +
-                (pair_df.z1 - pair_df.z2)**2).values.reshape(1, -1)
-    mask = (pair_df.k1 == 'vxt') & (pair_df.k2 == 'vxt')
-    coh_df.loc[:, mask] = np.exp(-12 *
-                                 np.sqrt((r / kwargs['v_hub'] * freq)**2 +
-                                         (0.12 * r /
-                                          kwargs['l_c'])**2))[:, mask]
-
-    return coh_df
+    freq = np.array(freq).reshape(1, -1)
+    n_f, n_s = freq.size, spat_df.shape[0]
+    ii_jj = [(i, j) for (i, j) in itertools.combinations(spat_df.index, 2)]
+    ii = np.array([tup[0] for tup in ii_jj])
+    jj = np.array([tup[1] for tup in ii_jj])
+    xyz = spat_df[['x', 'y', 'z']].values
+    coh_mat = np.repeat(np.eye((n_s)).reshape(n_s, n_s, 1),
+                        n_f, axis=2)
+    r = np.sqrt((xyz[ii, 1] - xyz[jj, 1])**2 +
+                (xyz[ii, 2] - xyz[jj, 2])**2)
+    mask = ((spat_df.loc[ii, 'k'].values == 'vxt') &
+            (spat_df.loc[jj, 'k'].values == 'vxt'))
+    coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
+                                       kwargs['v_hub'] * freq)**2
+                                      + (0.12 * r[mask].reshape(-1, 1) /
+                                         kwargs['l_c'])**2))
+    coh_mat[ii[mask], jj[mask], :] = coh_values
+    coh_mat[jj[mask], ii[mask]] = np.conj(coh_values)
+    return coh_mat

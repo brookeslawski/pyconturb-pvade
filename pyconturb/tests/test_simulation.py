@@ -29,7 +29,7 @@ def test_iec_mags_sum():
     # when
     mags_ksec = get_magnitudes(spat_df, spc_model=spc_model,
                                **kwargs)
-    var_ksec = 2 * (mags_ksec.values ** 2).sum(axis=0)
+    var_ksec = 2 * (mags_ksec ** 2).sum(axis=0)
 
     # then
     np.testing.assert_allclose(var_ksec, var_theo, rtol=0.01)
