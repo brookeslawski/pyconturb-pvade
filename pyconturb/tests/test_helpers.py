@@ -11,23 +11,8 @@ import numpy as np
 import pandas as pd
 
 from pyconturb.core.helpers import gen_spat_grid, get_iec_sigk, \
-                                    spat_to_pair_df, combine_spat_df,\
-                                    h2t_to_uvw, complex_interp
-
-
-def test_complex_interp():
-    """interpolation of complex pandas dataframes
-    """
-    # given
-    in_df = pd.DataFrame([[0 + 0j], [np.nan], [3 + 3j]],
-                         index=[0, 1, 3], columns=['a'])
-    theo_df = pd.DataFrame([[0 + 0j], [1 + 1j], [3 + 3j]],
-                           index=[0, 1, 3], columns=['a'],
-                           dtype=complex)
-    # when
-    res_df = complex_interp(in_df, method='index')
-    # then
-    pd.testing.assert_frame_equal(res_df, theo_df)
+                                    combine_spat_df,\
+                                    h2t_to_uvw
 
 
 def test_gen_spat_grid():
@@ -60,38 +45,6 @@ def test_get_iec_sigk():
     sig_k = get_iec_sigk(spat_df, **kwargs)
     sig_theo = [1.834, 1.4672, 0.917]
     np.testing.assert_allclose(sig_k, sig_theo)
-
-
-def test_spat_to_pair_df():
-    """converting spat_df to pair_df
-    """
-    # given
-    spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50],
-                            ['vyt', 'p0', 0, 0, 50]],
-                           columns=['k', 'p_id', 'x', 'y', 'z'])
-    pair_df_theo = pd.DataFrame([['vxt', 0, 0, 50,
-                                  'vyt', 0, 0, 50]],
-                                columns=['k1', 'x1', 'y1', 'z1',
-                                         'k2', 'x2', 'y2', 'z2'])
-    # when
-    pair_df = spat_to_pair_df(spat_df)
-    # then
-    pd.testing.assert_frame_equal(pair_df, pair_df_theo, check_dtype=False)
-
-
-def test_one_spat_to_pair():
-    """spatial df with one element should produce an empty pair
-    """
-    # given
-    spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50]],
-                           columns=['k', 'p_id', 'x', 'y', 'z'])
-    pair_df_theo = pd.DataFrame(np.empty((0, 8)),
-                                columns=['k1', 'x1', 'y1', 'z1',
-                                         'k2', 'x2', 'y2', 'z2'])
-    # when
-    pair_df = spat_to_pair_df(spat_df)
-    # then
-    pd.testing.assert_frame_equal(pair_df, pair_df_theo, check_dtype=False)
 
 
 def test_combine_spat_df():

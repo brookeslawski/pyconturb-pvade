@@ -96,12 +96,8 @@ def test_get_data_mags_zinterp():
     con_data = {'con_spat_df': con_spat_df, 'con_turb_df': con_turb_df}
     freq = np.fft.rfftfreq(con_turb_df.shape[0], d=d)
     kwargs = {'method': 'z_interp'}
-    mags_theo = pd.DataFrame([[3, 2, 3, 1, 1]],
-                             index=freq, columns=['vxt_p0', 'vxt_p1',
-                                                  'vxt_p2', 'vxt_p3',
-                                                  'vxt_p4'],
-                             dtype=np.float)
+    mags_theo = np.array([[3, 2, 3, 1, 1]])
     # when
-    mags_df = get_data_magnitudes(spat_df, freq, con_data, **kwargs)
+    mags_np = get_data_magnitudes(spat_df, freq, con_data, **kwargs)
     # then
-    pd.testing.assert_frame_equal(mags_theo, mags_df)
+    np.testing.assert_allclose(mags_theo, mags_np)

@@ -6,7 +6,6 @@ Author
 Jenni Rinker
 rink@dtu.dk
 """
-import itertools
 import os
 
 import numpy as np
@@ -35,18 +34,6 @@ def combine_spat_df(left_df, right_df,
         comb_df = comb_df.drop_duplicates(subset=['k', 'x', 'y', 'z'])
     comb_df = comb_df.reset_index(drop=True)
     return comb_df
-
-
-def complex_interp(df, **kwargs):
-    """linearly interpolate NaNs in a complex dataframe (pandas method broken)
-    """
-    re = pd.DataFrame(index=df.index, columns=df.columns)
-    imag = pd.DataFrame(index=df.index, columns=df.columns)
-    re[:] = np.real(df)
-    imag[:] = np.imag(df)
-    re.iloc[np.isnan(df).values] = np.nan
-    imag.iloc[np.isnan(df).values] = np.nan
-    return re.interpolate(**kwargs) + 1j * imag.interpolate(**kwargs)
 
 
 def df_to_hawc2(turb_df, spat_df, path):
@@ -172,50 +159,21 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
     return str_cntr_pos0, str_mann, str_output
 
 
-def spat_to_pair_df(spat_df):
-    """convert spat_df to pair_df
-    """
-    n_s = spat_df.shape[0]  # no. of spatial points
-    if n_s == 1:
-        n_pairs = 0
-        return pd.DataFrame(np.empty((n_pairs, 8)),
-                            columns=['k1', 'x1', 'y1', 'z1', 'k2', 'x2',
-                                     'y2', 'z2'])  # df input to coherence fcn
-    n_pairs = int(np.math.factorial(n_s) / 2 /
-                  np.math.factorial(n_s - 2))  # no. of combos
-    pair_df = pd.DataFrame(np.empty((n_pairs, 8)),
-                           columns=['k1', 'x1', 'y1', 'z1', 'k2', 'x2',
-                                    'y2', 'z2'])  # df input to coherence fcn
-
-    i_df = 0  # initialize counter
-    ii, jj = [], []  # use these index vectors later during cholesky decomp
-    for (i, j) in itertools.combinations(spat_df.index, 2):
-        pair_df.loc[i_df, ['k1', 'x1', 'y1', 'z1']] = \
-            spat_df.loc[i, ['k', 'x', 'y', 'z']].values
-        pair_df.loc[i_df, ['k2', 'x2', 'y2', 'z2']] = \
-            spat_df.loc[j, ['k', 'x', 'y', 'z']].values
-        i_df += 1
-        ii.append(i)  # save index
-        jj.append(j)  # save index
-
-    return pair_df
-
-
-def spc_to_mag(spc_df, spat_df, df, n_t, **kwargs):
+def spc_to_mag(spc_np, spat_df, df, n_t, **kwargs):
     """Convert spectral dataframe to magnitudes
     """
     if 'scale' not in kwargs.keys():
         raise ValueError('Missing keyword argument "scale"!')
-    mags_df = np.sqrt(spc_df * df / 2)
-    mags_df.iloc[0, :] = 0.  # set dc component to zero
+    mags_np = np.sqrt(spc_np * df / 2)
+    mags_np[0, :] = 0.  # set dc component to zero
 
     if kwargs['scale']:
-        sum_magsq = 2 * (mags_df ** 2).sum(axis=0).values.reshape(1, -1)
+        sum_magsq = 2 * (mags_np ** 2).sum(axis=0).reshape(1, -1)
         sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
         alpha = np.sqrt((n_t - 1) / n_t
                         * (sig_k ** 2) / sum_magsq)  # scaling factor
     else:
         alpha = 1
-    mags_df = alpha * mags_df
+    mags_np = alpha * mags_np
 
-    return mags_df
+    return mags_np
