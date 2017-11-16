@@ -12,7 +12,7 @@ from .wind_profiles import get_wsp_profile
 
 def gen_turb(sim_spat_df, con_data=None,
              coh_model='iec', spc_model='kaimal', wsp_model='iec',
-             seed=None, mem_gb=0.10, **kwargs):
+             seed=None, mem_gb=0.10, verbose=False, **kwargs):
     """Generate constrained turbulence box
 
     Notes
@@ -21,6 +21,8 @@ def gen_turb(sim_spat_df, con_data=None,
     in the HAWC2 coordinate system. In particular, x is directed upwind, z is
     vertical up, and y is lateral to form a right-handed coordinate system.
     """
+    if verbose:
+        print('Beginning turbulence simulation...')
     n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
     # create empty constraint data if not passed in
     if con_data is None:
@@ -79,18 +81,18 @@ def gen_turb(sim_spat_df, con_data=None,
         turb_fft = np.zeros((n_f, n_s), dtype=complex)
         nf_chunk = int(mem_gb * (2 ** 29) /
                        (all_spat_df.shape[0] ** 2))  # no. of freqs in a chunk
-        if nf_chunk < 1:
+        if nf_chunk < 1:  # insufficient memory for requested no. of points
             raise MemoryError('Insufficient memory! Consider increasing ' +
                               'the allowable usable memory or using a bigger' +
                               ' machine.')
-        all_coh_mat = get_coh_mat(freq[:nf_chunk],
-                                  all_spat_df, coh_model=coh_model,
-                                  **kwargs)  # genr first cohrnce chunk
+        n_chunks = int(np.ceil(freq.size / nf_chunk))
 
         # loop through frequencies
         for i_f in range(1, freq.size):
             i_chunk = i_f // nf_chunk  # calculate chunk number
-            if i_f % nf_chunk == 0:  # genr next cohrnc chunk when needed
+            if (i_f - 1) % nf_chunk == 0:  # genr cohrnc chunk when needed
+                if verbose:
+                    print(f'  Processing chunk {i_chunk + 1} / {n_chunks}')
                 all_coh_mat = get_coh_mat(freq[i_chunk * nf_chunk:
                                                (i_chunk + 1) * nf_chunk],
                                           all_spat_df, coh_model=coh_model,
@@ -145,5 +147,8 @@ def gen_turb(sim_spat_df, con_data=None,
     wsp_profile = get_wsp_profile(sim_spat_df,
                                   wsp_model=wsp_model, **kwargs)
     out_df[:] += wsp_profile
+
+    if verbose:
+        print('Turbulence generation complete.')
 
     return out_df
