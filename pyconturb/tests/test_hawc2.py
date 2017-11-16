@@ -32,7 +32,7 @@ def test_binary_thru_hawc2():
     spat_df = gen_spat_grid(y, z)
 
     # paths, directories, and file names
-    test_dir = os.getcwd()  # test directory
+    test_dir = os.path.dirname(__file__)  # test directory
     testdata_dir = os.path.join(test_dir, 'data')  # data directory
     tmp_dir = os.path.join(test_dir, 'tmp')  # temporary directory for test
     htc_name = 'load_save_turb.htc'  # hawc2 simulation template
