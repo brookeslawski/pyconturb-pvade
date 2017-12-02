@@ -12,7 +12,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pyconturb.core.coherence import get_coh_mat, get_iec_coh_mat
+from pyconturb.core.coherence import get_coh_mat, get_iec_coh_mat, \
+    get_3d_coh_mat
 from pyconturb.core.helpers import gen_spat_grid
 from pyconturb.core.simulation import gen_turb
 
@@ -99,6 +100,28 @@ def test_iec_value():
 
         # then
         np.testing.assert_allclose(coh, coh_theory)
+
+
+def test_3d_value():
+    """Verify that the value of 3d coherence matches theory
+    """
+    # 1: same comp, 2: diff comp
+    for comp, coh2 in [('vxt', 0.0479231144),
+                       ('vyt', 0.0358754554),
+                       ('vzt', 0.0013457414)]:
+        # given
+        spat_df = pd.DataFrame([[comp, 'p0', 0, 0, 0],
+                                [comp, 'p1', 0, 0, 1]],
+                               columns=['k', 'p_id', 'x', 'y', 'z'])
+        freq = 0.5
+        kwargs = {'v_hub': 2, 'l_c': 3}
+        coh_theory = np.array([[1., coh2], [coh2, 1.]])
+
+        # when
+        coh = get_3d_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
+
+        # then
+        np.testing.assert_allclose(coh, coh_theory, atol=1e-6)
 
 
 @pytest.mark.long  # mark this as a slow test
