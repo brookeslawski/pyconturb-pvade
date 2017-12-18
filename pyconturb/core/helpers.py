@@ -36,7 +36,8 @@ def combine_spat_df(left_df, right_df,
     return comb_df
 
 
-def df_to_hawc2(turb_df, spat_df, path):
+def df_to_hawc2(turb_df, spat_df, path,
+                prefix=''):
     """ksec3d-style turbulence dataframe to binary files for hawc2
 
     Notes
@@ -69,7 +70,7 @@ def df_to_hawc2(turb_df, spat_df, path):
 
     # save binary files
     for comp, turb in zip(['u', 'v', 'w'], [u_bin, v_bin, w_bin]):
-        bin_path = os.path.join(path, f'{comp}.bin')
+        bin_path = os.path.join(path, f'{prefix}{comp}.bin')
         with open(bin_path, 'wb') as bin_fid:
             turb.astype(np.dtype('<f')).tofile(bin_fid)
 
