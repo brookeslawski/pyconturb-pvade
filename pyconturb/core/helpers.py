@@ -160,6 +160,66 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
     return str_cntr_pos0, str_mann, str_output
 
 
+def rotate_time_series(ux, uy, uz):
+    """Yaw and pitch time series so v- and w-directions have zero mean
+
+        Args:
+            ux (numpy array): array of x-sonic velocity
+            uy (numpy array): array of y-sonic velocity
+            uz (numpy array): array of z-sonic velocity
+
+        Returns:
+            x_rot (numpy array): [n_t x 3] array of rotated data (yaw+pitch)
+            x_yaw (numpy array): [n_t x 3] array of rotated data (yaw)
+    """
+
+    # return all NaNs if any component is all nan values
+    if all(np.isnan(ux))*all(np.isnan(uy))*all(np.isnan(uz)):
+        u = np.zeros(ux.shape)
+        v = np.zeros(uy.shape)
+        w = np.zeros(uz.shape)
+        u[:] = np.nan
+        v[:] = np.nan
+        w[:] = np.nan
+
+    # if at least one data point in all three components
+    else:
+
+        # combine velocities into array
+        x_raw = np.concatenate((ux.reshape(ux.size, 1),
+                                uy.reshape(ux.size, 1),
+                                uz.reshape(ux.size, 1)), axis=1)
+
+        # interpolate out any NaN values
+        for i_comp in range(x_raw.shape[1]):
+            x = x_raw[:, i_comp]
+            idcs_all = np.arange(x.size)
+            idcs_notnan = np.logical_not(np.isnan(x))
+            x_raw[:, i_comp] = np.interp(idcs_all,
+                                         idcs_all[idcs_notnan], x[idcs_notnan])
+
+        # rotate through yaw angle
+        theta = np.arctan(np.nanmean(x_raw[:, 1]) / np.nanmean(x_raw[:, 0]))
+        A_yaw = np.array([[np.cos(theta), -np.sin(theta), 0],
+                          [np.sin(theta), np.cos(theta), 0],
+                          [0, 0, 1]])
+        x_yaw = x_raw @ A_yaw
+
+        # rotate through pitch angle
+        phi = np.arctan(np.nanmean(x_yaw[:, 2]) / np.nanmean(x_yaw[:, 0]))
+        A_pitch = np.array([[np.cos(phi), 0, -np.sin(phi)],
+                            [0, 1, 0],
+                            [np.sin(phi), 0, np.cos(phi)]])
+        x_rot = x_yaw @ A_pitch
+
+        # define rotated velocities
+        u = x_rot[:, 0]
+        v = x_rot[:, 1]
+        w = x_rot[:, 2]
+
+    return u, v, w
+
+
 def spc_to_mag(spc_np, spat_df, df, n_t, **kwargs):
     """Convert spectral dataframe to magnitudes
     """
