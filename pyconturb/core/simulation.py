@@ -145,7 +145,8 @@ def gen_turb(sim_spat_df, con_data=None,
 
     # add in mean wind speed according to specified profile
     wsp_profile = get_wsp_profile(sim_spat_df,
-                                  wsp_model=wsp_model, **kwargs)
+                                  con_data=con_data, wsp_model=wsp_model,
+                                  **kwargs)
     out_df[:] += wsp_profile
 
     if verbose:
