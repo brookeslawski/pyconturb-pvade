@@ -37,7 +37,7 @@ def get_iec_coh_mat(freq, spat_df,
     ii_jj = [(i, j) for (i, j) in itertools.combinations(spat_df.index, 2)]
     ii = np.array([tup[0] for tup in ii_jj])
     jj = np.array([tup[1] for tup in ii_jj])
-    xyz = spat_df[['x', 'y', 'z']].values
+    xyz = spat_df[['x', 'y', 'z']].values.astype(float)
     coh_mat = np.repeat(np.eye((n_s)).reshape(n_s, n_s, 1),
                         n_f, axis=2)
     r = np.sqrt((xyz[ii, 1] - xyz[jj, 1])**2 +

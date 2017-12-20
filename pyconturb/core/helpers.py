@@ -225,6 +225,7 @@ def spc_to_mag(spc_np, spat_df, df, n_t, **kwargs):
     """
     if 'scale' not in kwargs.keys():
         raise ValueError('Missing keyword argument "scale"!')
+    spc_np = spc_np.astype(float)
     mags_np = np.sqrt(spc_np * df / 2)
     mags_np[0, :] = 0.  # set dc component to zero
 
