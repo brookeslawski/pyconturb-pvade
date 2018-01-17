@@ -23,10 +23,11 @@ if __name__ == '__main__':
     seed = None  # random seed
     turb_name = 'turb_'  # prefix for turbulence box name when saved
     mem_gb = 0.20  # amount of memory to use in gigabytes
+    verbose = False  # print out arguments during simulation [-]
     T_sim = 600  # length of time to simulatione [s]
     dt_sim = 0.10  # desired simulation time step [s]
-    z_hub = 44  # V52 hub height [m]
     i_hub = 2  # index of hub height measurement [-]
+    scale = True  # scale spectra to ensure correct std dev [-]
 
     # load values from command line
     ny = int(inp_args[1])  # no. points in y direction
@@ -77,6 +78,7 @@ if __name__ == '__main__':
         con_turb_df = con_turb_df.reindex(index=t_sim)  # add nans
         con_turb_df = con_turb_df.interpolate(
                 method='linear').fillna(method='bfill')  # interpolate nans
+        con_turb_df = con_turb_df.loc[t_sim]  # pull out only sim times
 
     # throw error if unrecognized input
     else:
@@ -85,7 +87,8 @@ if __name__ == '__main__':
     # simulate turbulence
     turb_df = gen_turb(spat_df, con_data=con_data,
                        coh_model=coh_model, spc_model=spc_model,
-                       wsp_model=wsp_model, scale=True,
+                       wsp_model=wsp_model, scale=scale,
+                       seed=seed, mem_gb=mem_gb, verbose=verbose,
                        **kwargs)
 
     # save in hawc2 format
