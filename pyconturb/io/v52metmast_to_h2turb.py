@@ -25,6 +25,8 @@ if __name__ == '__main__':
     mem_gb = 0.20  # amount of memory to use in gigabytes
     T_sim = 600  # length of time to simulatione [s]
     dt_sim = 0.10  # desired simulation time step [s]
+    z_hub = 44  # V52 hub height [m]
+    i_hub = 2  # index of hub height measurement [-]
 
     # load values from command line
     ny = int(inp_args[1])  # no. points in y direction
@@ -50,12 +52,15 @@ if __name__ == '__main__':
     con_data = v52_pickle_to_condata(path_metmast)
     con_spat_df = con_data['con_spat_df']
     con_turb_df = con_data['con_turb_df']
-    v_hub = -np.mean(con_turb_df[[s for s in con_turb_df.columns
-                                  if 'vxt' in s]].values)
+    v_hub = -np.mean(con_turb_df[f'vxt_p{i_hub:.0f}'].values)
+
+    # calculate reference turbulence intensity
+    sig_u = np.std(con_turb_df[f'vxt_p{i_hub:.0f}'].values)
+    i_ref = sig_u / (0.75 * v_hub + 5.6)  # eq. 11 in IEC 61400-1
 
     # assign keyword arguments
     kwargs = {'v_hub': v_hub, 'ed': 3, 'l_c': l_c, 'z_hub': zc,
-              'T': T_sim, 'dt': dt_sim}
+              'T': T_sim, 'dt': dt_sim, 'i_ref': i_ref}
 
     # assign values for unconstrained case
     if sim_type == 'unc':
