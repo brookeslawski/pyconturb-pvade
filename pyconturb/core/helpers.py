@@ -13,6 +13,7 @@ import pandas as pd
 
 
 _spat_colnames = ['k', 'p_id', 'x', 'y', 'z']
+_HAWC2_BIN_FMT = '<f'  # HAWC2 binary turbulence datatype
 
 
 def combine_spat_df(left_df, right_df,
@@ -72,7 +73,7 @@ def df_to_hawc2(turb_df, spat_df, path,
     for comp, turb in zip(['u', 'v', 'w'], [u_bin, v_bin, w_bin]):
         bin_path = os.path.join(path, f'{prefix}{comp}.bin')
         with open(bin_path, 'wb') as bin_fid:
-            turb.astype(np.dtype('<f')).tofile(bin_fid)
+            turb.astype(np.dtype(_HAWC2_BIN_FMT)).tofile(bin_fid)
 
     return
 
