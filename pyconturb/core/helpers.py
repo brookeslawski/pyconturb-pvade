@@ -78,6 +78,16 @@ def df_to_hawc2(turb_df, spat_df, path,
     return
 
 
+def hawc2_to_df(path, n_x, n_y, n_z):
+    """Load a hawc2 binary file into a pandas datafram"""
+
+    bin_arr = np.fromfile(path,
+                          dtype=np.dtype(_HAWC2_BIN_FMT)).reshape((n_x,
+                                                                   n_y, n_z))
+
+    return bin_arr
+
+
 def get_iec_sigk(spat_df, **kwargs):
     """get sig_k for iec
     """
