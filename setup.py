@@ -18,5 +18,7 @@ setup(name='pyconturb',
       license='MIT',
       packages=['pyconturb'],
       install_requires=['numpy',
-                        'pandas'],
+                        'pandas',
+                        'pytest',  # running tests
+                        ],
       zip_safe=False)
