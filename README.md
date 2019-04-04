@@ -1,3 +1,7 @@
+[![pipeline status](https://gitlab.windenergy.dtu.dk/rink/pyconturb/badges/master/pipeline.svg)](https://gitlab.windenergy.dtu.dk/rink/pyconturb/commits/master)
+[![coverage report](https://gitlab.windenergy.dtu.dk/rink/pyconturb/badges/master/coverage.svg)](https://gitlab.windenergy.dtu.dk/rink/pyconturb/commits/master)
+
+
 # PyConTurb: Constrained Stochastic Turbulence for Wind Energy Applications
 
 This Python package uses a novel method to generate stochastic turbulence boxes
@@ -6,12 +10,19 @@ the simulation methodology will be submitted to Wind Energy.
 
 ## To install the code
 
-Please note the code runs on Python 3.6.
+Please note the code only runs on Python 3.6 or higher.
 
-Follow these instructions to install the package:
-1. Clone the respository to your local machine
-2. Navigate to the newly cloned folder in your terminal/Anaconda Prompt
-3. `pip install -e . `
+Simple installation of v1.0 (non-editable source code):  
+   `pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@v1.0`
+
+Developer install:  
+```
+git clone https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
+pip install pytest pytest-cov
+cd pyconturb
+pip install -e .
+
+```
 
 
 ## Constrained or unconstrained turbulence
