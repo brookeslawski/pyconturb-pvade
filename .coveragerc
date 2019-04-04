@@ -1,0 +1,5 @@
+[run]
+omit = 
+	pyconturb/tests/*
+[report]
+fail_under = 50

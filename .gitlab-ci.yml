@@ -7,9 +7,10 @@ test_pyconturb:  # name the job what we like
   image: continuumio/anaconda3:latest
   stage:  # build, test, deploy defined by default [2]
     test
-  script:
+  script:  # install dev options, then code, then run tests and do coverage report
+  - pip install pytest pytest-cov
   - pip install -e .
-  - pytest -m "not long"
+  - python -m pytest -m "not long" --cov-report term-missing:skip-covered --cov=pyconturb --cov-config .coveragerc
   tags:  # only runners with this tag can do the job [3]
   - python
 
