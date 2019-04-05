@@ -14,7 +14,7 @@ import pytest
 
 from pyconturb.core.coherence import get_coh_mat, get_iec_coh_mat, \
     get_3d_coh_mat
-from pyconturb.core.helpers import gen_spat_grid
+from pyconturb.core.helpers import gen_spat_grid, _spat_colnames
 from pyconturb.core.simulation import gen_turb
 
 
@@ -22,17 +22,14 @@ def test_main_default():
     """Check the default value for get_coherence
     """
     # given
-    spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 0],
-                            ['vxt', 'p1', 0, 0, 1]],
-                           columns=['k', 'p_id', 'x', 'y', 'z'])
+    spat_df = pd.DataFrame([[0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 1]], columns=_spat_colnames)
     freq = 1
     kwargs = {'v_hub': 1, 'l_c': 1}
     coh_theory = np.array([[1, 5.637379774e-6],
                            [5.637379774e-6, 1]])
-
     # when
     coh = get_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
-
     # then
     np.testing.assert_allclose(coh, coh_theory)
 
@@ -41,27 +38,20 @@ def test_main_badcohmodel():
     """Should raise an error if a wrong coherence model is passed in
     """
     # given
-    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
-                           columns=['k1', 'x1', 'y1', 'z1',
-                                    'k2', 'x2', 'y2', 'z2'])
+    spat_df = pd.DataFrame([[0, 0, 0, 0, 0]],  columns=_spat_colnames)
     freq = 1
-
     # when & then
     with pytest.raises(ValueError):
-        get_coh_mat(spat_df, freq,
-                    coh_model='garbage')
+        get_coh_mat(spat_df, freq, coh_model='garbage')
 
 
 def test_iec_badedition():
     """IEC coherence should raise an error if any edn other than 3 is given
     """
     # given
-    spat_df = pd.DataFrame([['vxt', 0, 0, 0, 'vxt', 0, 0, 1]],
-                           columns=['k1', 'x1', 'y1', 'z1',
-                                    'k2', 'x2', 'y2', 'z2'])
+    spat_df = pd.DataFrame([[0, 0, 0, 0, 0]], columns=_spat_colnames)
     freq = 1
     kwargs = {'ed': 4, 'v_hub': 12, 'l_c': 340.2}
-
     # when & then
     with pytest.raises(ValueError):
         get_iec_coh_mat(spat_df, freq, **kwargs)
@@ -71,12 +61,10 @@ def test_iec_missingkwargs():
     """IEC coherence should raise an error if missing parameter(s)
     """
     # given
-    spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 0],
-                            ['vxt', 'p1', 0, 0, 1]],
-                           columns=['k', 'p_id', 'x', 'y', 'z'])
+    spat_df = pd.DataFrame([[0, 0, 0, 0, 0],
+                            [0, 1, 0, 0, 1]], columns=_spat_colnames)
     freq = 1
     kwargs = {'ed': 3, 'v_hub': 12}
-
     # when & then
     with pytest.raises(ValueError):
         get_iec_coh_mat(freq, spat_df, **kwargs)
@@ -86,18 +74,16 @@ def test_iec_value():
     """Verify that the value of IEC coherence matches theory
     """
     # 1: same comp, 2: diff comp
-    for comp2, coh2 in [('vxt', 0.0479231144), ('vyt', 0)]:
+    for comp2, coh2 in [(0, 0.0479231144), (1, 0)]:
         # given
-        spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 0],
-                                [comp2, 'p1', 0, 0, 1]],
-                               columns=['k', 'p_id', 'x', 'y', 'z'])
+        spat_df = pd.DataFrame([[0, 0, 0, 0, 0],
+                                [comp2, 1, 0, 0, 1]],
+                               columns=_spat_colnames)
         freq = 0.5
         kwargs = {'ed': 3, 'v_hub': 2, 'l_c': 3}
         coh_theory = np.array([[1., coh2], [coh2, 1.]])
-
         # when
         coh = get_iec_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
-
         # then
         np.testing.assert_allclose(coh, coh_theory)
 
@@ -106,20 +92,16 @@ def test_3d_value():
     """Verify that the value of 3d coherence matches theory
     """
     # 1: same comp, 2: diff comp
-    for comp, coh2 in [('vxt', 0.0479231144),
-                       ('vyt', 0.0358754554),
-                       ('vzt', 0.0013457414)]:
+    for comp, coh2 in [(0, 0.0479231144), (1, 0.0358754554), (2, 0.0013457414)]:
         # given
-        spat_df = pd.DataFrame([[comp, 'p0', 0, 0, 0],
-                                [comp, 'p1', 0, 0, 1]],
-                               columns=['k', 'p_id', 'x', 'y', 'z'])
+        spat_df = pd.DataFrame([[comp, 0, 0, 0, 0],
+                                [comp, 1, 0, 0, 1]],
+                               columns=_spat_colnames)
         freq = 0.5
         kwargs = {'v_hub': 2, 'l_c': 3}
         coh_theory = np.array([[1., coh2], [coh2, 1.]])
-
         # when
         coh = get_3d_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
-
         # then
         np.testing.assert_allclose(coh, coh_theory, atol=1e-6)
 
@@ -136,12 +118,10 @@ def test_verify_iec_sim_coherence():
     coh_model, spc_model = 'iec', 'kaimal'
     n_real = 1000  # number of realizations in ensemble
     coh_thresh = 0.12  # coherence threshold
-
     # get theoretical coherence
     idcs = np.triu_indices(spat_df.shape[0], k=1)
     coh_theo = get_coh_mat(1 / kwargs['T'], spat_df, coh_model=coh_model,
                            **kwargs)[idcs].flatten()
-
     # when
     ii_jj = [(i, j) for (i, j) in
              itertools.combinations(spat_df.index, 2)]  # pairwise indices

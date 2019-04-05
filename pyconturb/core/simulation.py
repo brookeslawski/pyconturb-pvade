@@ -4,10 +4,10 @@
 import numpy as np
 import pandas as pd
 
-from .coherence import get_coh_mat
-from .helpers import combine_spat_df
-from .magnitudes import get_magnitudes
-from .wind_profiles import get_wsp_profile
+from pyconturb.core.coherence import get_coh_mat
+from pyconturb.core.helpers import combine_spat_df, _spat_colnames
+from pyconturb.core.magnitudes import get_magnitudes
+from pyconturb.core.wind_profiles import get_wsp_profile
 
 
 def gen_turb(sim_spat_df, con_data=None,
@@ -27,8 +27,8 @@ def gen_turb(sim_spat_df, con_data=None,
     # create empty constraint data if not passed in
     if con_data is None:
         constrained = False
-        con_spat_df = np.empty((1, 0))
-        con_turb_df = np.empty((1, 0))
+        con_spat_df = pd.DataFrame(columns=_spat_colnames)
+        con_turb_df = pd.DataFrame()
         n_d = 0  # no. of constraints
 
     else:
@@ -54,10 +54,8 @@ def gen_turb(sim_spat_df, con_data=None,
     t = np.arange(n_t) * kwargs['dt']  # time array
 
     # get magnitudes of constraints and from theory
-    sim_mags = get_magnitudes(all_spat_df.iloc[n_d:, :],
-                              con_data=con_data,
-                              spc_model=spc_model,
-                              **kwargs)  # mags of sim points
+    sim_mags = get_magnitudes(all_spat_df.iloc[n_d:, :], con_data=con_data,
+                              spc_model=spc_model, **kwargs)  # mags of sim points
 
     if constrained:
         conturb_fft = np.fft.rfft(con_turb_df.values,
@@ -125,27 +123,24 @@ def gen_turb(sim_spat_df, con_data=None,
     turb_t = np.fft.irfft(turb_fft, axis=0, n=n_t) * n_t
 
     # inverse fft and transpose to utilize pandas functions easier
-    columns = (all_spat_df.k + '_' + all_spat_df.p_id).values
-    turb_df = pd.DataFrame(turb_t,
-                           columns=columns,
-                           index=t)
+    columns = [f'{"uvw"[int(k)]}_p{int(i)}' for (k, i) in
+               zip(all_spat_df.k, all_spat_df.p_id)]
+    turb_df = pd.DataFrame(turb_t, columns=columns, index=t)
 
     # return just the desired simulation points
     out_df = pd.DataFrame(index=turb_df.index)
     for i_sim in sim_spat_df.index:
-        k, p_id, x, y, z = sim_spat_df.loc[i_sim,
-                                           ['k', 'p_id', 'x', 'y', 'z']]
-        out_key = f'{k}_{p_id}'
+        k, i, x, y, z = sim_spat_df.loc[i_sim, _spat_colnames]
+        out_key = f'{"uvw"[int(k)]}_p{int(i)}'
         turb_pid = all_spat_df[(all_spat_df.k == k) &
                                (all_spat_df.x == x) &
                                (all_spat_df.y == y) &
                                (all_spat_df.z == z)].p_id.values[0]
-        turb_key = f'{k}_{turb_pid}'
+        turb_key = f'{"uvw"[int(k)]}_p{int(turb_pid)}'
         out_df[out_key] = turb_df[turb_key]
 
     # add in mean wind speed according to specified profile
-    wsp_profile = get_wsp_profile(sim_spat_df,
-                                  con_data=con_data, wsp_model=wsp_model,
+    wsp_profile = get_wsp_profile(sim_spat_df, con_data=con_data, wsp_model=wsp_model,
                                   **kwargs)
     out_df[:] += wsp_profile
 

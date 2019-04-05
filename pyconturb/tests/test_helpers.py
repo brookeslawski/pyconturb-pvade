@@ -6,93 +6,96 @@ Author
 Jenni Rinker
 rink@dtu.dk
 """
+import os
 
 import numpy as np
 import pandas as pd
 
-from pyconturb.core.helpers import gen_spat_grid, get_iec_sigk, \
-                                    combine_spat_df,\
-                                    h2t_to_uvw
+import pyconturb.core.helpers as pcth
+
+
+_spat_colnames = pcth._spat_colnames
+
+
+def test_combine_spat_df():
+    """combine two spat_dfs. checks adding three types of dataframes: empty, 1-row with
+    incorrect p_id and 2 rows with correct p_id.
+    """
+    # given
+    dfa = pd.DataFrame([[0, 3, 0, 0, 60]], columns=_spat_colnames)
+    dfb = pd.DataFrame([[0, 0, 0, 0, 50],
+                        [0, 1, 0, 0, 60]], columns=_spat_colnames)
+    empt_df = pd.DataFrame([], columns=_spat_colnames)
+    frames = [empt_df, dfa, dfb]
+    dfa_fixed = pd.DataFrame([[0, 0, 0, 0, 60]], columns=_spat_colnames)
+    theo_frames = [empt_df, dfa_fixed, dfb]
+    for i, (df1, df2) in enumerate([(a, b) for a in frames for b in frames]):  # df pairs
+        # when
+        comb_df = pcth.combine_spat_df(df1, df2)
+        if i < 3:  # empty frame -> theo frames
+            theo_df = theo_frames[i]
+        elif i == 5:  # dfa on top, rows get flipped
+            theo_df = pd.DataFrame([[0, 0, 0, 0, 60],
+                                    [0, 1, 0, 0, 50]], columns=_spat_colnames)
+        elif i > 5:  # dfb on bottom -> dfb
+            theo_df = theo_frames[2]
+        else:  # otherwise [dfa+dfa or dfa+empty] -> fixed dfa
+            theo_df = theo_frames[1]
+        # then
+        pd.testing.assert_frame_equal(comb_df, theo_df, check_dtype=False,
+                                      check_index_type=False)
+
+
+def test_pctdf_to_h2turb():
+    """save PyConTurb dataframe as binary file and load again"""
+    # given
+    path = '.'
+    spat_df = pcth.gen_spat_grid(0, [50, 70])
+    turb_df = pd.DataFrame(np.random.rand(100, 6),
+                           columns=[f'{c}_p{i}' for i in range(2) for c in 'uvw'])
+    # when
+    pcth.df_to_h2turb(turb_df, spat_df, '.')
+    test_df = pcth.h2turb_to_df(spat_df, path)
+    [os.remove(os.path.join('.', f'{c}.bin')) for c in 'uvw']
+    # then
+    pd.testing.assert_frame_equal(turb_df, test_df, check_dtype=False)
 
 
 def test_gen_spat_grid():
-    """Test the generation of the spatial grid
+    """verify column names and entries of spat grid
     """
     # given
-    y = [-10, 10]
-    z = [50, 70]
-    first_row = ['vxt', 'p0', 0, -10, 50]
-    theo_size = (3 * len(y) * len(z)) * len(first_row)
-
+    y, z = 0, 0
+    theo_df = pd.DataFrame(np.zeros((3, 5)),  columns=_spat_colnames)
+    theo_df.iloc[:, 0] = range(3)
     # when
-    spat_df = gen_spat_grid(y, z)
-
+    spat_df = pcth.gen_spat_grid(y, z)
     # then
-    assert spat_df.size == theo_size
-    assert all(spat_df.iloc[0, :2] == first_row[:2])
-    assert np.array_equal(spat_df.iloc[0, 2:].values,
-                          np.array(first_row[2:]))
+    pd.testing.assert_frame_equal(theo_df, spat_df, check_dtype=False)
 
 
 def test_get_iec_sigk():
     """verify values for iec sig_k
     """
-    spat_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50],
-                            ['vyt', 'p0', 0, 0, 50],
-                            ['vzt', 'p0', 0, 0, 50]],
-                           columns=['k', 'p_id', 'x', 'y', 'z'])
+    # given
+    spat_df = pd.DataFrame([[0, 0, 0, 0, 50],
+                            [1, 0, 0, 0, 50],
+                            [2, 0, 0, 0, 50]], columns=_spat_colnames)
     kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2}
-    sig_k = get_iec_sigk(spat_df, **kwargs)
     sig_theo = [1.834, 1.4672, 0.917]
+    # when
+    sig_k = pcth.get_iec_sigk(spat_df, **kwargs)
+    # then
     np.testing.assert_allclose(sig_k, sig_theo)
-
-
-def test_combine_spat_df():
-    """combining two spat_df
-    """
-    # given
-    left_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50]],
-                           columns=['k', 'p_id', 'x', 'y', 'z'])
-    right_df = pd.DataFrame([['vxt', 'p0', 0, 0, 60]],
-                            columns=['k', 'p_id', 'x', 'y', 'z'])
-    comb_df_theo = pd.DataFrame([['vxt', 'p0', 0, 0, 50],
-                                 ['vxt', 'p1', 0, 0, 60]],
-                                columns=['k', 'p_id', 'x', 'y', 'z'])
-    # when
-    comb_df = combine_spat_df(left_df, right_df)
-    # then
-    pd.testing.assert_frame_equal(comb_df, comb_df_theo, check_dtype=False)
-
-
-def test_combine_empty_spat_dfs():
-    """combining empty spat_dfs
-    """
-    # given
-    left_df = pd.DataFrame([['vxt', 'p0', 0, 0, 50]],
-                           columns=['k', 'p_id', 'x', 'y', 'z'])
-    right_df = pd.DataFrame([['vxt', 'p0', 0, 0, 60]],
-                            columns=['k', 'p_id', 'x', 'y', 'z'])
-    empty_df = pd.DataFrame(np.empty((0, 5)),
-                            columns=['k', 'p_id', 'x', 'y', 'z'])
-    theo_dfs = [left_df, right_df]
-    # when
-    comb_dfs = [combine_spat_df(left_df, empty_df),
-                combine_spat_df(empty_df, right_df)]
-    # then
-    for (res_df, theo_df) in zip(comb_dfs, theo_dfs):
-        pd.testing.assert_frame_equal(res_df, theo_df, check_dtype=False)
 
 
 def test_h2t_to_uvw():
     """test converting turb_df to uvw coor sys
     """
     # given
-    turb_df = pd.DataFrame([[1, 1, 1]], index=[1],
-                           columns=['vxt_p0', 'vyt_p0', 'vzt_p0'])
-    theo_df = pd.DataFrame([[-1, -1, 1]], index=[1],
-                           columns=['u_p0', 'v_p0', 'w_p0'])
+    turb_df = pd.DataFrame([[1, 1, 1]], index=[1], columns=['vxt_p0', 'vyt_p0', 'vzt_p0'])
+    theo_df = pd.DataFrame([[-1, -1, 1]], index=[1], columns=['u_p0', 'v_p0', 'w_p0'])
     # when
-    uvw_turb_df = h2t_to_uvw(turb_df)
+    uvw_turb_df = pcth.h2t_to_uvw(turb_df)
     # then
-    pd.testing.assert_frame_equal(uvw_turb_df, theo_df,
-                                  check_dtype=False)
+    pd.testing.assert_frame_equal(uvw_turb_df, theo_df, check_dtype=False)
