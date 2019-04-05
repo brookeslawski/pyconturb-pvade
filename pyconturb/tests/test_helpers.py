@@ -93,9 +93,25 @@ def test_h2t_to_uvw():
     """test converting turb_df to uvw coor sys
     """
     # given
-    turb_df = pd.DataFrame([[1, 1, 1]], index=[1], columns=['vxt_p0', 'vyt_p0', 'vzt_p0'])
+    turb_df = pd.DataFrame([[1, 1, 1]], index=[1], columns=[f'v{c}t_p0' for c in 'xyz'])
     theo_df = pd.DataFrame([[-1, -1, 1]], index=[1], columns=['u_p0', 'v_p0', 'w_p0'])
     # when
     uvw_turb_df = pcth.h2t_to_uvw(turb_df)
     # then
     pd.testing.assert_frame_equal(uvw_turb_df, theo_df, check_dtype=False)
+
+
+def test_rotate_time_series():
+    """verify time series rotation"""
+    # given
+    xyzs = [[np.array([np.nan]), ] * 3,  # all nans
+            [np.ones([1]), np.ones([1]), np.ones([1])],  # equal in all three
+            [-np.ones([1]), np.ones([1]), np.ones([1])]]  # negative in x
+    uvws = [xyzs[0],
+            [np.sqrt(3) * np.ones([1]), np.zeros([1]), np.zeros([1])],
+            [np.sqrt(3) * np.ones([1]), np.zeros([1]), np.zeros([1])]]
+    # when
+    for xyz, uvw_theo in zip(xyzs, uvws):
+        uvw = pcth.rotate_time_series(*xyz)
+        # then
+        np.testing.assert_almost_equal(uvw[0], uvw_theo[0])

@@ -170,7 +170,7 @@ def rotate_time_series(ux, uy, uz):
     """
 
     # return all NaNs if any component is all nan values
-    if all(np.isnan(ux))*all(np.isnan(uy))*all(np.isnan(uz)):
+    if all(np.isnan(ux)) * all(np.isnan(uy)) * all(np.isnan(uz)):
         u = np.zeros(ux.shape)
         v = np.zeros(uy.shape)
         w = np.zeros(uz.shape)
@@ -191,8 +191,7 @@ def rotate_time_series(ux, uy, uz):
             x = x_raw[:, i_comp]
             idcs_all = np.arange(x.size)
             idcs_notnan = np.logical_not(np.isnan(x))
-            x_raw[:, i_comp] = np.interp(idcs_all,
-                                         idcs_all[idcs_notnan], x[idcs_notnan])
+            x_raw[:, i_comp] = np.interp(idcs_all, idcs_all[idcs_notnan], x[idcs_notnan])
 
         # rotate through yaw angle
         theta = np.arctan(np.nanmean(x_raw[:, 1]) / np.nanmean(x_raw[:, 0]))
@@ -207,6 +206,14 @@ def rotate_time_series(ux, uy, uz):
                             [0, 1, 0],
                             [np.sin(phi), 0, np.cos(phi)]])
         x_rot = x_yaw @ A_pitch
+
+        # if u is negative, we need to rotate 180 degrees around the y asix
+        if x_rot[:, 0].sum() < 0:
+            alpha = np.pi
+            A_rot = np.array([[np.cos(alpha), 0, -np.sin(alpha)],
+                              [0, 1, 0],
+                              [np.sin(alpha), 0, np.cos(alpha)]])
+            x_rot = x_rot @ A_rot
 
         # define rotated velocities
         u = x_rot[:, 0]
