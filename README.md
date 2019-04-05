@@ -14,11 +14,13 @@ Please note the code only runs on Python 3.6 or higher.
 
 Simple installation of v1.0 (non-editable source code):  
    `pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@v1.0`
+If you want to run the examples, you will also need Jupyter and matplotlib:  
+    `pip install jupyter matplotlib`
 
 Developer install:  
 ```
 git clone https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
-pip install pytest pytest-cov
+pip install pytest pytest-cov jupyter matplotlib
 cd pyconturb
 pip install -e .
 

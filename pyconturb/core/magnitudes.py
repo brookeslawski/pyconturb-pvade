@@ -42,8 +42,8 @@ def get_data_magnitudes(spat_df, freq, con_data, **kwargs):
         raise ValueError('Missing key "method" for data interpolation!')
 
     # initialize the output magnitude dataframe
-    mags_df = pd.DataFrame(index=freq, columns=spat_df.k + '_' + spat_df.p_id,
-                           dtype=float)
+    mag_cols = [f'{"uvw"[k]}_p{i}' for (k, i) in zip(spat_df.k, spat_df.p_id)]
+    mags_df = pd.DataFrame(index=freq, columns=mag_cols, dtype=float)
 
     # interpolate by vertical height
     if kwargs['method'] == 'z_interp':
@@ -57,18 +57,20 @@ def get_data_magnitudes(spat_df, freq, con_data, **kwargs):
                 sub_spat_df = con_spat_df[(con_spat_df.k == k) &
                                           (con_spat_df.z == z)]
                 uniq_spat_df = uniq_spat_df.append(sub_spat_df.iloc[0, :])
-                sub_pids = sub_spat_df.k + '_' + sub_spat_df.p_id
+                sub_pids = [f'{"uvw"[k]}_p{i}' for (k, i) in
+                            zip(sub_spat_df.k, sub_spat_df.p_id)]
                 sub_turb_df = con_turb_df[sub_pids]
                 mag_mean = np.abs(np.fft.rfft(sub_turb_df,
                                               axis=0)).mean(axis=1)
-                uniq_mag_df[sub_pids.values[0]] = mag_mean
+                uniq_mag_df[sub_pids[0]] = mag_mean
 
         # loop through each component
         for k in spat_df.k.unique():
 
             # get magnitudes for interpolation
             sub_spat_df = uniq_spat_df[uniq_spat_df.k == k]  # con pts for k
-            sub_ptnms = sub_spat_df.k + '_' + sub_spat_df.p_id  # con pt names
+            sub_ptnms = [f'{"uvw"[k]}_p{i}' for (k, i) in
+                         zip(sub_spat_df.k, sub_spat_df.p_id)]  # con pt names
             sub_mag_df = uniq_mag_df[sub_ptnms]  # mags for those con pts
 
             # create dataframe for interpolating
@@ -83,7 +85,8 @@ def get_data_magnitudes(spat_df, freq, con_data, **kwargs):
             res_df = intp_df.loc[sim_zs, :].T
 
             # assign values to mags_df
-            mags_df[k + '_' + spat_df[spat_df.k == k].p_id] = res_df.values
+            col_names = [f'{"uvw"[k]}_p{i}' for i in spat_df[spat_df.k == k].p_id.values]
+            mags_df[col_names] = res_df.values
 
     else:
         raise ValueError('Method is not defined!')
@@ -107,9 +110,9 @@ def get_kaimal_spectrum(spat_df, freq,
     z = spat_df.z.values
     freq = np.asarray(freq).reshape(-1, 1)  # need this to be a col vector
     lambda_1 = 0.7 * z * (z < 60) + 42 * (z >= 60)
-    l_k = 8.1 * lambda_1 * (comps == 'vxt') + \
-        2.7 * lambda_1 * (comps == 'vyt') + \
-        0.66 * lambda_1 * (comps == 'vzt')
+    l_k = 8.1 * lambda_1 * (comps == 0) + \
+        2.7 * lambda_1 * (comps == 1) + \
+        0.66 * lambda_1 * (comps == 2)
     sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
     tau = (l_k / kwargs['v_hub']).reshape(1, -1)  # L_k / U
 

@@ -15,7 +15,7 @@ import numpy as np
 import pandas as pd
 
 from pyconturb.core.simulation import gen_turb
-from pyconturb.core.helpers import gen_spat_grid, make_hawc2_input, df_to_hawc2
+from pyconturb.core.helpers import gen_spat_grid, make_hawc2_input, df_to_h2turb
 from pyconturb.io.hawc2 import dat_to_df
 
 
@@ -65,7 +65,7 @@ def test_binary_thru_hawc2():
                        coh_model=coh_model, spc_model=spc_model,
                        wsp_profile=wsp_profile, scale=True,
                        seed=False, **kwargs)
-    df_to_hawc2(turb_df, spat_df, tmp_dir)
+    df_to_h2turb(turb_df, spat_df, tmp_dir)
     turb_df.reset_index().to_csv(csv_path)
     del turb_df
 

@@ -9,8 +9,7 @@ import numpy as np
 _iec_alpha = 0.2  # power law coefficient from IEC 61400-1 Ed. 3
 
 
-def get_wsp_profile(spat_df,
-                    con_data=None, wsp_model='iec', **kwargs):
+def get_wsp_profile(spat_df, con_data=None, wsp_model='iec', **kwargs):
     """get the mean wind speed profile at each point
 
     Notes
@@ -34,9 +33,9 @@ def get_wsp_profile(spat_df,
         if any([k not in kwargs.keys() for k in ['v_hub', 'z_hub']]):
             raise ValueError('Missing keyword arguments for IEC mean ' +
                              'wind profile model')
-        wsp_prof = -(kwargs['v_hub'] *
-                     (spat_df.mask(spat_df.k != 'vxt', other=0).z
-                     / kwargs['z_hub']) ** _iec_alpha).values
+        wsp_prof = (kwargs['v_hub'] *
+                    (spat_df.mask(spat_df.k != 0, other=0).z
+                    / kwargs['z_hub']) ** _iec_alpha).values
 
     elif wsp_model == 'data':  # interpolate from data
         # check that we're given data to calculate profile from
@@ -46,9 +45,8 @@ def get_wsp_profile(spat_df,
         # pull out data heights and mean wind speed profile
         con_spat_df = con_data['con_spat_df']
         con_turb_df = con_data['con_turb_df']
-        zs = con_spat_df[con_spat_df.k == 'vxt'].z.values
-        mwsps = con_turb_df[[s for s in con_turb_df.columns
-                             if 'vxt' in s]].mean(axis=0).values
+        zs = con_spat_df[con_spat_df.k == 0].z.values
+        mwsps = con_turb_df.filter(regex='u_', axis=1).mean(axis=0).values
         mwsps = mwsps[np.argsort(zs)].astype(float)  # sort for later interp
         zs = zs[np.argsort(zs)].astype(float)  # sort for later interp
 
@@ -57,7 +55,7 @@ def get_wsp_profile(spat_df,
         u_min, u_max = mwsps[zs.argmin()], mwsps[zs.argmax()]  # mean wsps
 
         # create profile: interp btwn msmnt heights, power law otherwise
-        z_sims = spat_df.mask(spat_df.k != 'vxt', other=0).z.values
+        z_sims = spat_df.mask(spat_df.k != 0, other=0).z.values
         wsp_prof = np.zeros(z_sims.size)  # initialize profile to zeros
         wsp_prof[z_sims <= z_min] = u_min * (z_sims[z_sims <= z_min] /
                                              z_min) ** _iec_alpha  # power law

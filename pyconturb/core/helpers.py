@@ -12,125 +12,110 @@ import numpy as np
 import pandas as pd
 
 
-_spat_colnames = ['k', 'p_id', 'x', 'y', 'z']
+_spat_colnames = ['k', 'p_id', 'x', 'y', 'z']  # column names of spatial df
 _HAWC2_BIN_FMT = '<f'  # HAWC2 binary turbulence datatype
+_HAWC2_TURB_COOR = {'u': -1, 'v': -1, 'w': 1}  # hawc2 turb xyz to uvw
 
 
-def combine_spat_df(left_df, right_df,
-                    drop_duplicates=True):
+def combine_spat_df(top_df, bot_df, drop_duplicates=True):
     """combine two spatial dataframes, changing point index of right_df
     """
-    if left_df.size == 0:
-        return right_df.copy()
-    if right_df.size == 0:
-        return left_df.copy()
-    left_df = left_df.copy()  # don't want to overwrite original dataframes
-    right_df = right_df.copy()
-
-    max_left_pid = int(left_df[['p_id']].applymap(lambda s: int(s[1:])).max())
-    right_df['p_id'] = right_df[['p_id']]\
-        .applymap(lambda s: f'p{int(s[1:])+max_left_pid+1}')
-    comb_df = pd.concat((left_df, right_df), axis=0)
+    top_df, bot_df = top_df.copy(), bot_df.copy()  # no change original when update p_id
+    top_df.p_id -= top_df.p_id.min()  # p_id must start at zero
+    bot_df.p_id -= bot_df.p_id.min()
+    if top_df.size:  # if non-empty top_df, add p_id of top to bot_df
+        bot_df.p_id += top_df.p_id.max() + 1
+    comb_df = pd.concat((top_df, bot_df))
     if drop_duplicates:
         comb_df = comb_df.drop_duplicates(subset=['k', 'x', 'y', 'z'])
     comb_df = comb_df.reset_index(drop=True)
     return comb_df
 
 
-def df_to_hawc2(turb_df, spat_df, path,
-                prefix=''):
+def df_to_h2turb(turb_df, spat_df, path, prefix=''):
     """ksec3d-style turbulence dataframe to binary files for hawc2
 
     Notes
     -----
-    1. The turbulence must have been generated on a grid.
-    2. The naming convention must be 'u_p0', 'v_p0, 'w_p0', 'u_p1', etc.,
+    * The turbulence must have been generated on a y-z grid.
+    * The naming convention must be 'u_p0', 'v_p0, 'w_p0', 'u_p1', etc.,
        where the point indices proceed vertically along z before horizontally
        along y.
-    3. The turbulence boxes should have no mean wind speed profiles added.
-    4. The turbulence df must be defined according to HAWC2's turbulence
-       (x, y, z) coordinate system. Thus, the conversion to the (u, v, w)
-       binary coordinate system (bin) from the hawc2 coordinate system is as
-       follows:
-           u(bin) = -u(hawc2)
-           v(bin) = -v(hawc2)
-           w(bin) =  w(hawc2)
     """
-    # define dimensions
-    n_x = turb_df.shape[0]
-    n_y = len(set(spat_df.y.values))
-    n_z = len(set(spat_df.z.values))
-
-    # convert to hawc2 coordinate systems
-    u_bin = -turb_df[[s for s in turb_df.columns
-                      if 'vxt_' in s]].values.reshape((n_x, n_y, n_z))
-    v_bin = -turb_df[[s for s in turb_df.columns
-                      if 'vyt_' in s]].values.reshape((n_x, n_y, n_z))
-    w_bin = turb_df[[s for s in turb_df.columns
-                     if 'vzt_' in s]].values.reshape((n_x, n_y, n_z))
-
-    # save binary files
-    for comp, turb in zip(['u', 'v', 'w'], [u_bin, v_bin, w_bin]):
-        bin_path = os.path.join(path, f'{prefix}{comp}.bin')
+    nx = turb_df.shape[0]  # turbulence dimensions for reshaping
+    ny = len(set(spat_df.y.values))
+    nz = len(set(spat_df.z.values))
+    # make and save binary files for all three components
+    for c in 'uvw':
+        coeff = _HAWC2_TURB_COOR[c]
+        arr = coeff * turb_df.filter(regex=f'{c}_', axis=1).values.reshape((nx, ny, nz))
+        bin_path = os.path.join(path, f'{prefix}{c}.bin')
         with open(bin_path, 'wb') as bin_fid:
-            turb.astype(np.dtype(_HAWC2_BIN_FMT)).tofile(bin_fid)
-
+            arr.astype(np.dtype(_HAWC2_BIN_FMT)).tofile(bin_fid)
     return
-
-
-def hawc2_to_df(path, n_x, n_y, n_z):
-    """Load a hawc2 binary file into a pandas datafram"""
-
-    bin_arr = np.fromfile(path,
-                          dtype=np.dtype(_HAWC2_BIN_FMT)).reshape((n_x,
-                                                                   n_y, n_z))
-
-    return bin_arr
 
 
 def get_iec_sigk(spat_df, **kwargs):
     """get sig_k for iec
     """
     sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
-    sig_k = sig * (1.0 * (spat_df.k == 'vxt') + 0.8 * (spat_df.k == 'vyt') +
-                   0.5 * (spat_df.k == 'vzt')).values
+    sig_k = sig * (1.0 * (spat_df.k == 0) + 0.8 * (spat_df.k == 1) +
+                   0.5 * (spat_df.k == 2)).values
     return sig_k
 
 
-def gen_spat_grid(y, z, comps=['vxt', 'vyt', 'vzt']):
+def gen_spat_grid(y, z, comps=[0, 1, 2]):
     """Generate spat_df (all turbulent components and grid defined by x and z)
 
     Notes
     -----
-    This coordinate system is aligned with HAWC2's turbulence coordinate
-    system. In other words, x is directed upwind, z is vertical, and y is
-    lateral according to a right-hand coordinate system.
+    0=u is downwind, 2=w is vertical and 1=v is lateral (right-handed
+    coordinate system).
     """
-    ys, zs = np.meshgrid(y, z)
-    ks = np.array(comps)
-    xs = np.zeros_like(ys)
-    ps = [f'p{i:.0f}' for i in np.arange(xs.size)]
-    spat_arr = np.vstack((np.tile(ks, xs.size),
-                          np.repeat(ps, ks.size),
-                          np.repeat(xs.T.reshape(-1), ks.size),
-                          np.repeat(ys.T.reshape(-1), ks.size),
-                          np.repeat(zs.T.reshape(-1), ks.size))).T
-    spat_df = pd.DataFrame(spat_arr,
-                           columns=_spat_colnames)
-    spat_df[['x', 'y', 'z']] = spat_df[['x', 'y', 'z']].astype(float)
+    ys, zs = np.meshgrid(y, z)  # make a meshgrid
+    ks = np.array(comps)  # sanitizing
+    xs = np.zeros_like(ys)  # all points in a plane
+    ps = np.arange(xs.size)  # point indices
+    spat_arr = np.c_[np.tile(comps, xs.size),
+                     np.repeat(np.c_[ps, xs.T.ravel(), ys.T.ravel(), zs.T.ravel()],
+                               ks.size, axis=0)]  # create array using numpy
+    spat_df = pd.DataFrame(spat_arr, columns=_spat_colnames)  # create dataframe
     return spat_df
+
+
+def h2turb_to_arr(spat_df, path):
+    """raw-load a hawc2 turbulent binary file to numeric array"""
+    ny, nz = pd.unique(spat_df.y).size, pd.unique(spat_df.z).size
+    bin_arr = np.fromfile(path, dtype=np.dtype(_HAWC2_BIN_FMT))
+    nx = bin_arr.size // (ny * nz)
+    if (nx * ny * nz) != bin_arr.size:
+        raise ValueError('Binary file size does not match spat_df!')
+    bin_arr.shape = (nx, ny, nz)
+    return bin_arr
+
+
+def h2turb_to_df(spat_df, path, prefix=''):
+    """load a hawc2 binary file into a pandas datafram with transform to uvw"""
+    turb_df = pd.DataFrame()
+    for c in 'uvw':
+        comp_path = os.path.join(path, f'{prefix}{c}.bin')
+        arr = _HAWC2_TURB_COOR[c] * h2turb_to_arr(spat_df, comp_path)
+        nx, ny, nz = arr.shape
+        comp_df = pd.DataFrame(arr.reshape(nx, ny*nz)).add_prefix(f'{c}_p')
+        turb_df = turb_df.join(comp_df, how='outer')
+    turb_df = turb_df[[f'{c}_p{i}' for i in range(2) for c in 'uvw']]
+    return turb_df
 
 
 def h2t_to_uvw(turb_df):
     """convert turbulence dataframe with hawc2 turbulence coord sys to uvw
     """
-    comp_tups = [('vxt', 'u', -1), ('vyt', 'v', -1), ('vzt', 'w', 1)]
     new_turb_df = pd.DataFrame(index=turb_df.index)
-    for comp_h2t, comp_uvw, sign in comp_tups:
-        old_cols = [s for s in turb_df.columns if comp_h2t in s]
-        new_cols = [s.replace(comp_h2t, comp_uvw) for s in old_cols]
-        new_turb_df[new_cols] = sign * turb_df.loc[:, old_cols]
-
+    h2_comps = ['vxt', 'vyt', 'vzt']
+    for ic, c in enumerate('uvw'):
+        new_cols = [f'{c}_p{i}' for i in range(turb_df.shape[1] // 3)]
+        new_turb_df[new_cols] = _HAWC2_TURB_COOR[c] \
+            * turb_df.filter(regex=f'{h2_comps[ic]}_', axis=1)
     return new_turb_df
 
 

@@ -42,8 +42,8 @@ def get_iec_coh_mat(freq, spat_df,
                         n_f, axis=2)
     r = np.sqrt((xyz[ii, 1] - xyz[jj, 1])**2 +
                 (xyz[ii, 2] - xyz[jj, 2])**2)
-    mask = ((spat_df.loc[ii, 'k'].values == 'vxt') &
-            (spat_df.loc[jj, 'k'].values == 'vxt'))
+    mask = ((spat_df.loc[ii, 'k'].values == 0) &
+            (spat_df.loc[jj, 'k'].values == 0))
     coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
                                        kwargs['v_hub'] * freq)**2
                                       + (0.12 * r[mask].reshape(-1, 1) /
@@ -73,8 +73,8 @@ def get_3d_coh_mat(freq, spat_df,
                 (xyz[ii, 2] - xyz[jj, 2])**2)
 
     # longitudinal coherence
-    mask = ((spat_df.loc[ii, 'k'].values == 'vxt') &
-            (spat_df.loc[jj, 'k'].values == 'vxt'))
+    mask = ((spat_df.loc[ii, 'k'].values == 0) &
+            (spat_df.loc[jj, 'k'].values == 0))
     coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
                                        kwargs['v_hub'] * freq)**2
                                       + (0.12 * r[mask].reshape(-1, 1) /
@@ -83,8 +83,8 @@ def get_3d_coh_mat(freq, spat_df,
     coh_mat[jj[mask], ii[mask]] = np.conj(coh_values)
 
     # lateral coherence
-    mask = ((spat_df.loc[ii, 'k'].values == 'vyt') &
-            (spat_df.loc[jj, 'k'].values == 'vyt'))
+    mask = ((spat_df.loc[ii, 'k'].values == 1) &
+            (spat_df.loc[jj, 'k'].values == 1))
     coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
                                        kwargs['v_hub'] * freq)**2
                                       + (0.12 * r[mask].reshape(-1, 1) /
@@ -93,8 +93,8 @@ def get_3d_coh_mat(freq, spat_df,
     coh_mat[jj[mask], ii[mask]] = np.conj(coh_values)
 
     # vertical coherence
-    mask = ((spat_df.loc[ii, 'k'].values == 'vzt') &
-            (spat_df.loc[jj, 'k'].values == 'vzt'))
+    mask = ((spat_df.loc[ii, 'k'].values == 2) &
+            (spat_df.loc[jj, 'k'].values == 2))
     coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
                                        kwargs['v_hub'] * freq)**2
                                       + (0.12 * r[mask].reshape(-1, 1) /
