@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pyconturb.core.sig_models import get_sig_values, iec_sig
+from pyconturb.sig_models import get_sig_values, iec_sig
 from pyconturb._utils import _spat_colnames
 
 

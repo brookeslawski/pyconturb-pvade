@@ -3,9 +3,9 @@
 """
 import numpy as np
 
+from pyconturb.spectral_models import get_spec_values
+from pyconturb.sig_models import get_sig_values
 from pyconturb._utils import get_freq
-from pyconturb.core.spectral_models import get_spec_values
-from pyconturb.core.sig_models import get_sig_values
 
 
 def get_magnitudes(spat_df, spec_func, sig_func, **kwargs):

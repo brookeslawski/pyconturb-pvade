@@ -10,8 +10,8 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
-from pyconturb.core.simulation import gen_turb
-from pyconturb.core.wind_profiles import constant_profile
+from pyconturb.simulation import gen_turb
+from pyconturb.wind_profiles import constant_profile
 from pyconturb._utils import gen_spat_grid, _spat_colnames
 
 
@@ -63,7 +63,7 @@ def test_collocated_turb():
     spat_df = pd.DataFrame([[0, 0, 0, 0, 30],
                             [0, 1, 0, 0, 50]], columns=_spat_colnames)
     theory = con_turb_df.u_p0 - con_turb_df.u_p0.mean()
-    wsp_func = constant_profile()  # zero profile
+    wsp_func = constant_profile  # zero profile
     # when
     turb_df = gen_turb(spat_df, con_data={'con_spat_df': con_spat_df,
                                           'con_turb_df': con_turb_df},
