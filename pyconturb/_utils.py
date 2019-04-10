@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Miscellaneous helper functions
-
-Author
-------
-Jenni Rinker
-rink@dtu.dk
+"""utility functions
 """
 import os
 
@@ -55,15 +50,6 @@ def df_to_h2turb(turb_df, spat_df, path, prefix=''):
     return
 
 
-def get_iec_sigk(spat_df, **kwargs):
-    """get sig_k for iec
-    """
-    sig = kwargs['i_ref'] * (0.75 * kwargs['v_hub'] + 5.6)  # std dev
-    sig_k = sig * (1.0 * (spat_df.k == 0) + 0.8 * (spat_df.k == 1) +
-                   0.5 * (spat_df.k == 2)).values
-    return sig_k
-
-
 def gen_spat_grid(y, z, comps=[0, 1, 2]):
     """Generate spat_df (all turbulent components and grid defined by x and z)
 
@@ -81,6 +67,15 @@ def gen_spat_grid(y, z, comps=[0, 1, 2]):
                                ks.size, axis=0)]  # create array using numpy
     spat_df = pd.DataFrame(spat_arr, columns=_spat_colnames)  # create dataframe
     return spat_df
+
+
+def get_freq(**kwargs):
+    """get frequency array"""
+    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
+    t = np.arange(n_t) * kwargs['dt']
+    n_f = n_t // 2 + 1
+    freq = np.arange(n_f) / kwargs['T']
+    return t, freq
 
 
 def h2turb_to_arr(spat_df, path):
@@ -130,7 +125,7 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
     # string for mann model block
     T, dt = kwargs['T'], kwargs['dt']
     y, z = set(spat_df.y.values), set(spat_df.z.values)
-    n_x, du = int(np.ceil(T / dt)), dt * kwargs['v_hub']
+    n_x, du = int(np.ceil(T / dt)), dt * kwargs['u_hub']
     n_y, dv = len(y), (max(y) - min(y)) / (len(y) - 1)
     n_z, dw = len(z), (max(z) - min(z)) / (len(z) - 1)
     str_mann = '  begin mann ;\n' + \
@@ -144,7 +139,7 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
                '  end mann '
 
     # string for output
-    pts_df = spat_df.loc[spat_df.k == 'vxt', ['x', 'y', 'z']]
+    pts_df = spat_df.loc[spat_df.k == 0, ['x', 'y', 'z']]
     str_output = ''
     for i_p in pts_df.index:
         x_p = -pts_df.loc[i_p, 'y']
@@ -221,24 +216,3 @@ def rotate_time_series(ux, uy, uz):
         w = x_rot[:, 2]
 
     return u, v, w
-
-
-def spc_to_mag(spc_np, spat_df, df, n_t, **kwargs):
-    """Convert spectral dataframe to magnitudes
-    """
-    if 'scale' not in kwargs.keys():
-        raise ValueError('Missing keyword argument "scale"!')
-    spc_np = spc_np.astype(float)
-    mags_np = np.sqrt(spc_np * df / 2)
-    mags_np[0, :] = 0.  # set dc component to zero
-
-    if kwargs['scale']:
-        sum_magsq = 2 * (mags_np ** 2).sum(axis=0).reshape(1, -1)
-        sig_k = get_iec_sigk(spat_df, **kwargs).reshape(1, -1)
-        alpha = np.sqrt((n_t - 1) / n_t
-                        * (sig_k ** 2) / sum_magsq)  # scaling factor
-    else:
-        alpha = 1
-    mags_np = alpha * mags_np
-
-    return mags_np

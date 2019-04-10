@@ -4,7 +4,8 @@
 
 # ===== TEST PyWake debian=====
 test_pyconturb:  # name the job what we like
-  image: continuumio/anaconda3:latest
+  #image: continuumio/anaconda3:latest
+  image: python:3.6-slim
   stage:  # build, test, deploy defined by default [2]
     test
   script:  # install dev options, then code, then run tests and do coverage report

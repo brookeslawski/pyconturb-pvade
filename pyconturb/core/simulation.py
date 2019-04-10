@@ -5,47 +5,51 @@ import numpy as np
 import pandas as pd
 
 from pyconturb.core.coherence import get_coh_mat
-from pyconturb.core.helpers import combine_spat_df, _spat_colnames
 from pyconturb.core.magnitudes import get_magnitudes
-from pyconturb.core.wind_profiles import get_wsp_profile
+from pyconturb.core.wind_profiles import get_wsp_values, power_profile
+from pyconturb.core.spectral_models import kaimal_spectrum
+from pyconturb.core.sig_models import iec_sig
+from pyconturb._utils import combine_spat_df, _spat_colnames
 
 
-def gen_turb(sim_spat_df, con_data=None,
-             coh_model='iec', spc_model='kaimal', wsp_model='iec',
+_DEF_KWARGS = {'u_hub': 10, 'z_hub': 90, 'alpha': 0.2, 'turb_class': 'A',
+               'T': 600, 'dt': 1, 'l_c': 340.2}  # lc for coherence
+
+
+def gen_turb(sim_spat_df, con_data=None, coh_model='iec',
+             wsp_func=None, sig_func=None, spec_func=None,
              seed=None, mem_gb=0.10, verbose=False, **kwargs):
-    """Generate constrained turbulence box
-
-    Notes
-    -----
-    This turbulence box is defined according to the x, y, z coordinate system
-    in the HAWC2 coordinate system. In particular, x is directed upwind, z is
-    vertical up, and y is lateral to form a right-handed coordinate system.
-    """
+    """Generate constrained uvw turbulence box"""
     if verbose:
         print('Beginning turbulence simulation...')
-    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
-    # create empty constraint data if not passed in
-    if con_data is None:
-        constrained = False
-        con_spat_df = pd.DataFrame(columns=_spat_colnames)
-        con_turb_df = pd.DataFrame()
-        n_d = 0  # no. of constraints
 
+    # assign/create stuff not passed in
+    kwargs = {**_DEF_KWARGS, **kwargs}
+    if wsp_func is None:
+        wsp_func = power_profile(**kwargs)
+    if spec_func is None:
+        spec_func = kaimal_spectrum
+    if sig_func is None:
+        sig_func = iec_sig
+
+    # assign/create constraining data
+    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
+    if con_data is None:  # create empty constraint data if not passed in
+        constrained, n_d = False, 0  # no. of constraints
+        con_spat_df, con_turb_df = pd.DataFrame(columns=_spat_colnames), pd.DataFrame()
     else:
         constrained = True
-        con_spat_df = con_data['con_spat_df']
-        con_turb_df = con_data['con_turb_df']
+        con_spat_df, con_turb_df = con_data['con_spat_df'], con_data['con_turb_df']
         n_d = con_spat_df.shape[0]  # no. of constraints
         if con_turb_df.shape[0] != n_t:
-            raise ValueError('Time values in keyword arguments do not ' +
-                             'match constraints')
+            raise ValueError('Time values in keyword arguments do not match constraints')
 
     # combine data and sim spat_dfs
     all_spat_df = combine_spat_df(con_spat_df, sim_spat_df)  # all sim points
     n_s = all_spat_df.shape[0]  # no. of total points to simulate
 
     one_point = False
-    if n_s == 1:  # only one point
+    if n_s == 1:  # only one point, can't use indexing
         one_point = True
 
     # intermediate variables
@@ -53,9 +57,8 @@ def gen_turb(sim_spat_df, con_data=None,
     freq = np.arange(n_f) / kwargs['T']  # frequency array
     t = np.arange(n_t) * kwargs['dt']  # time array
 
-    # get magnitudes of constraints and from theory
-    sim_mags = get_magnitudes(all_spat_df.iloc[n_d:, :], con_data=con_data,
-                              spc_model=spc_model, **kwargs)  # mags of sim points
+    # get magnitudes of points to simulate. (nf, nsim). con_data in kwargs.
+    sim_mags = get_magnitudes(all_spat_df.iloc[n_d:, :], spec_func, sig_func, **kwargs)
 
     if constrained:
         conturb_fft = np.fft.rfft(con_turb_df.values,
@@ -140,8 +143,7 @@ def gen_turb(sim_spat_df, con_data=None,
         out_df[out_key] = turb_df[turb_key]
 
     # add in mean wind speed according to specified profile
-    wsp_profile = get_wsp_profile(sim_spat_df, con_data=con_data, wsp_model=wsp_model,
-                                  **kwargs)
+    wsp_profile = get_wsp_values(sim_spat_df, wsp_func, **kwargs)
     out_df[:] += wsp_profile
 
     if verbose:

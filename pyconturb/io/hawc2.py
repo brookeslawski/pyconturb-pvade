@@ -86,21 +86,15 @@ def get_unique_chnl_names(sel):
         raise ValueError(f'Unknown input type {type(sel)}')
     sel_df['unique'] = ''
     sel_df.loc[sel_df.var_desc == 'Time', 'unique'] = 'time'
-    for idx in sel_df[sel_df['notes'].str
-                      .contains('Free wind speed Vx')].index:
+    for idx in sel_df[sel_df['notes'].str.contains('Free wind speed Vx')].index:
         row = sel_df.loc[idx, :]
-        sel_df.loc[idx, 'unique'] = row.notes.split()[-1].replace('wind_',
-                                                                  'vxg_')
-    for idx in sel_df[sel_df['notes'].str
-                      .contains('Free wind speed Vy')].index:
+        sel_df.loc[idx, 'unique'] = row.notes.split()[-1].replace('wind_', 'vxg_')
+    for idx in sel_df[sel_df['notes'].str.contains('Free wind speed Vy')].index:
         row = sel_df.loc[idx, :]
-        sel_df.loc[idx, 'unique'] = row.notes.split()[-1].replace('wind_',
-                                                                  'vyg_')
-    for idx in sel_df[sel_df['notes'].str
-                      .contains('Free wind speed Vz')].index:
+        sel_df.loc[idx, 'unique'] = row.notes.split()[-1].replace('wind_', 'vyg_')
+    for idx in sel_df[sel_df['notes'].str.contains('Free wind speed Vz')].index:
         row = sel_df.loc[idx, :]
-        sel_df.loc[idx, 'unique'] = row.notes.split()[-1].replace('wind_',
-                                                                  'vzg_')
+        sel_df.loc[idx, 'unique'] = row.notes.split()[-1].replace('wind_', 'vzg_')
 
     return sel_df.unique.values
 

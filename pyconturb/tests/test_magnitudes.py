@@ -11,89 +11,44 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pyconturb.core.magnitudes import get_kaimal_spectrum, get_data_magnitudes
-from pyconturb.core.helpers import _spat_colnames
+from pyconturb.core.magnitudes import spc_to_mag, get_magnitudes
+from pyconturb.core.spectral_models import kaimal_spectrum
+from pyconturb.core.sig_models import iec_sig
+from pyconturb._utils import _spat_colnames, get_freq
 
 
-def test_kaimal_value():
-    """Check the value for get_kaimal_spectrum
-    """
+def test_get_mags_iec():
+    """"""
     # given
-    spat_df = pd.DataFrame([[0, 0, 0, 0, 50],
-                            [1, 0, 0, 0, 70]], columns=_spat_colnames)
-    freq = [0.5, 2.0]
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3}
-    # s_u(0.5, 2.0) = [0.2274190946, 0.0228944394]  # reminder to self
-    # s_v(0.5, 2.0) = [0.26042826, 0.0267869083]  # reminder to self
-    s_theory = np.array([[0.2274190946, 0.26042826],  # 0.5 Hz
-                         [0.0228944394, 0.0267869083]])  # 2.0 Hz
+    spat_df = pd.DataFrame([[0, 0, 0, 0, 90],
+                            [1, 0, 0, 0, 90]], columns=_spat_colnames)
+    kwargs = {'T': 2, 'dt': 1, 'turb_class': 'a', 'z_hub': 90, 'u_hub': 10, 'alpha': 0.2}
+    sig_func, spec_func = iec_sig, kaimal_spectrum
+    mags_theo = [[0, 0], [2.096, 1.6768]]
+    t, f = get_freq(**kwargs)
     # when
-    spc_df = get_kaimal_spectrum(spat_df, freq, **kwargs)
+    mags_arr = get_magnitudes(spat_df, spec_func, sig_func, **kwargs)
     # then
-    np.testing.assert_allclose(s_theory, spc_df, atol=1e-4)
+    np.testing.assert_almost_equal(mags_arr, mags_theo)
 
 
-def test_get_data_mags_err_bad_data():
-    """raise a ValueError when there is a component to interpolate with no data
-    """
+def test_spc_to_mag():
+    """verify we get mags with correct std out from function"""
     # given
-    d = 1.0
-    spat_df = pd.DataFrame([[0, 'p0', 0, 0, 50]],
-                           columns=_spat_colnames)
-    con_spat_df = pd.DataFrame([[1, 'p0', 0, 0, 50]],
-                               columns=_spat_colnames)
-    con_turb_df = pd.DataFrame([[1], [2], [1.5]], index=d * np.arange(3),
-                               columns=['v_p0'])
-    con_data = {'con_spat_df': con_spat_df, 'con_turb_df': con_turb_df}
-    freq = np.fft.rfftfreq(con_turb_df.shape[0], d=d)
-    kwargs = {'method': 'z_interp'}
-    # when & then
-    with pytest.raises(ValueError):
-        get_data_magnitudes(spat_df, freq, con_data, **kwargs)
-
-
-def test_get_data_mags_err_bad_method():
-    """raise a ValueError when invalid method specified
-    """
-    # given
-    d = 1.0
-    spat_df = pd.DataFrame([[0, 'p0', 0, 0, 50]],
-                           columns=_spat_colnames)
-    con_spat_df = pd.DataFrame([[1, 'p0', 0, 0, 50]],
-                               columns=_spat_colnames)
-    con_turb_df = pd.DataFrame([[1], [2], [1.5]], index=d * np.arange(3),
-                               columns=['v_p0'])
-    con_data = {'con_spat_df': con_spat_df, 'con_turb_df': con_turb_df}
-    freq = np.fft.rfftfreq(con_turb_df.shape[0], d=d)
-    kwargs = {'method': 'garbage'}
-    # when & then
-    with pytest.raises(ValueError):
-        get_data_magnitudes(spat_df, freq, con_data, **kwargs)
-
-
-def test_get_data_mags_zinterp():
-    """Check vertical interpolation for data magnitudes
-    """
-    # given
-    d = 1.0
-    spat_df = pd.DataFrame([[0, 0, 0, -10, 80],
-                            [0, 1, 0, 0, 60],
-                            [0, 2, 0, 0, 70],
-                            [0, 3, 0, 5, 50],
-                            [0, 4, 0, 10, 40]],
-                           columns=_spat_colnames)
-    con_spat_df = pd.DataFrame([[0, 0, 0, -10, 50],
-                                [0, 1, 0, -5, 70],
-                                [0, 2, 0, 5, 50],
-                                [0, 3, 0, 5, 70]],
-                               columns=_spat_colnames)
-    con_turb_df = pd.DataFrame([[0, 2, 2, 4]], index=[d],
-                               columns=['u_p0', 'u_p1', 'u_p2', 'u_p3'])
-    con_data = {'con_spat_df': con_spat_df, 'con_turb_df': con_turb_df}
-    freq = np.fft.rfftfreq(con_turb_df.shape[0], d=d)
-    kwargs = {'method': 'z_interp'}
-    mags_theo = np.array([[3, 2, 3, 1, 1]])
+    spat_df = pd.DataFrame([[0, 0, 0, 0, 90],
+                            [1, 0, 0, 0, 90]], columns=_spat_colnames)
+    spc_arr = np.ones((10, 2))
+    kwargs = {'T': 10, 'dt': 1}
+    t, f = get_freq(**kwargs)
+    sig_func = lambda k, y, z, **kwargs: 0.1 + 0.1 * np.array(k)
+    std_theo = [0.1, 0.2]
     # when
-    mags_np = get_data_magnitudes(spat_df, freq, con_data, **kwargs)
+    mags = spc_to_mag(spat_df, spc_arr, sig_func, **kwargs)
+    std_sim = np.std(np.fft.irfft(mags, n=t.size, axis=0) * t.size, axis=0)
     # then
-    np.testing.assert_allclose(mags_theo, mags_np)
+    np.testing.assert_almost_equal(std_sim, std_theo)
+
+
+if __name__ == '__main__':
+    test_get_mags_iec()
+    test_spc_to_mag()
