@@ -12,10 +12,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pyconturb.core.coherence import get_coh_mat, get_iec_coh_mat, \
-    get_3d_coh_mat
-from pyconturb.core.helpers import gen_spat_grid, _spat_colnames
+from pyconturb.core.coherence import get_coh_mat, get_iec_coh_mat, get_3d_coh_mat
 from pyconturb.core.simulation import gen_turb
+from pyconturb._utils import gen_spat_grid, _spat_colnames
 
 
 def test_main_default():
@@ -25,7 +24,7 @@ def test_main_default():
     spat_df = pd.DataFrame([[0, 0, 0, 0, 0],
                             [0, 1, 0, 0, 1]], columns=_spat_colnames)
     freq = 1
-    kwargs = {'v_hub': 1, 'l_c': 1}
+    kwargs = {'u_hub': 1, 'l_c': 1}
     coh_theory = np.array([[1, 5.637379774e-6],
                            [5.637379774e-6, 1]])
     # when
@@ -51,7 +50,7 @@ def test_iec_badedition():
     # given
     spat_df = pd.DataFrame([[0, 0, 0, 0, 0]], columns=_spat_colnames)
     freq = 1
-    kwargs = {'ed': 4, 'v_hub': 12, 'l_c': 340.2}
+    kwargs = {'ed': 4, 'u_hub': 12, 'l_c': 340.2}
     # when & then
     with pytest.raises(ValueError):
         get_iec_coh_mat(spat_df, freq, **kwargs)
@@ -63,8 +62,7 @@ def test_iec_missingkwargs():
     # given
     spat_df = pd.DataFrame([[0, 0, 0, 0, 0],
                             [0, 1, 0, 0, 1]], columns=_spat_colnames)
-    freq = 1
-    kwargs = {'ed': 3, 'v_hub': 12}
+    freq, kwargs = 1, {'ed': 3, 'u_hub': 12}
     # when & then
     with pytest.raises(ValueError):
         get_iec_coh_mat(freq, spat_df, **kwargs)
@@ -80,7 +78,7 @@ def test_iec_value():
                                 [comp2, 1, 0, 0, 1]],
                                columns=_spat_colnames)
         freq = 0.5
-        kwargs = {'ed': 3, 'v_hub': 2, 'l_c': 3}
+        kwargs = {'ed': 3, 'u_hub': 2, 'l_c': 3}
         coh_theory = np.array([[1., coh2], [coh2, 1.]])
         # when
         coh = get_iec_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
@@ -98,7 +96,7 @@ def test_3d_value():
                                 [comp, 1, 0, 0, 1]],
                                columns=_spat_colnames)
         freq = 0.5
-        kwargs = {'v_hub': 2, 'l_c': 3}
+        kwargs = {'u_hub': 2, 'l_c': 3}
         coh_theory = np.array([[1., coh2], [coh2, 1.]])
         # when
         coh = get_3d_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
@@ -113,9 +111,9 @@ def test_verify_iec_sim_coherence():
     # given
     y, z = [0], [70, 80]
     spat_df = gen_spat_grid(y, z)
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
-              'T': 300, 'dt': 100, 'scale': True}
-    coh_model, spc_model = 'iec', 'kaimal'
+    kwargs = {'u_hub': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_hub': 70,
+              'T': 300, 'dt': 100}
+    coh_model = 'iec'
     n_real = 1000  # number of realizations in ensemble
     coh_thresh = 0.12  # coherence threshold
     # get theoretical coherence
@@ -129,9 +127,7 @@ def test_verify_iec_sim_coherence():
     turb_ens = np.empty((int(np.ceil(kwargs['T']/kwargs['dt'])),
                          3 * len(y) * len(z), n_real))
     for i_real in range(n_real):
-        turb_ens[:, :, i_real] = gen_turb(spat_df, coh_model=coh_model,
-                                          spc_model=spc_model,
-                                          **kwargs)
+        turb_ens[:, :, i_real] = gen_turb(spat_df, coh_model=coh_model, **kwargs)
     turb_fft = np.fft.rfft(turb_ens, axis=0)
     x_ii, x_jj = turb_fft[1, ii, :], turb_fft[1, jj, :]
     coh = np.mean((x_ii * np.conj(x_jj)) /

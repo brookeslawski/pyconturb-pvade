@@ -15,8 +15,9 @@ import numpy as np
 import pandas as pd
 
 from pyconturb.core.simulation import gen_turb
-from pyconturb.core.helpers import gen_spat_grid, make_hawc2_input, df_to_h2turb
 from pyconturb.io.hawc2 import dat_to_df
+from pyconturb.core.wind_profiles import constant_profile
+from pyconturb._utils import gen_spat_grid, make_hawc2_input, df_to_h2turb
 
 
 def test_binary_thru_hawc2():
@@ -26,9 +27,9 @@ def test_binary_thru_hawc2():
     z_hub, l_blade = 119, 90  # hub height, blade length
     y = [-l_blade, l_blade]  # x-components of turb grid
     z = [z_hub - l_blade, z_hub, z_hub + l_blade]  # z-components of turb grid
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2,
+    kwargs = {'u_hub': 10, 'turb_class': 'B', 'l_c': 340.2,
               'z_hub': z_hub, 'T': 50, 'dt': 1.}
-    coh_model, spc_model, wsp_profile = 'iec', 'kaimal', 'none'
+    coh_model = 'iec'
     spat_df = gen_spat_grid(y, z)
 
     # paths, directories, and file names
@@ -40,7 +41,7 @@ def test_binary_thru_hawc2():
     new_htc_path = os.path.join(tmp_dir, htc_name)  # htc file in tmp/
     csv_path = os.path.join(tmp_dir, 'turb_df.csv')  # save pandas turb here
     bat_path = os.path.join(tmp_dir, 'run_hawc2.bat')  # bat file to run h2
-    hawc2_exe = 'C:/Users/rink/Documents/hawc2/HAWC2_all_12-4/HAWC2MB.exe'
+    hawc2_exe = 'C:/Users/rink/Documents/hawc2/HAWC2_all_12-5/HAWC2MB.exe'
 
     if not os.path.isfile(hawc2_exe):
         warnings.warn('***HAWC2 executable not found!!! Skipping test.***')
@@ -51,7 +52,7 @@ def test_binary_thru_hawc2():
         os.mkdir(tmp_dir)
 
     # 2. copy htc file there, replacing values
-    T, dt, wsp = kwargs['T'], kwargs['dt'], kwargs['v_hub']  # needed in htc
+    T, dt, wsp = kwargs['T'], kwargs['dt'], kwargs['u_hub']  # needed in htc
     str_cntr_pos0, str_mann, str_output = make_hawc2_input(tmp_dir,
                                                            spat_df, **kwargs)
     with open(htc_path, 'r') as old_fid:
@@ -60,19 +61,16 @@ def test_binary_thru_hawc2():
                 new_line = eval('f\'' + line.rstrip() + '\'') + '\n'
                 new_fid.write(new_line)
 
-    # 4. generate turbulence files
-    turb_df = gen_turb(spat_df,
-                       coh_model=coh_model, spc_model=spc_model,
-                       wsp_profile=wsp_profile, scale=True,
-                       seed=False, **kwargs)
+    # 4. generate turbulence files and save to csv
+    turb_df = gen_turb(spat_df, coh_model=coh_model, wsp_func=constant_profile(**kwargs),
+                       **kwargs)
     df_to_h2turb(turb_df, spat_df, tmp_dir)
-    turb_df.reset_index().to_csv(csv_path)
+    turb_df.reset_index().to_csv(csv_path, index=False)
     del turb_df
 
     # 3. run HAWC2 on htc file
     with open(bat_path, 'w') as bat_fid:
-        bat_fid.write(f'cd {tmp_dir}\n' +
-                      f'"{hawc2_exe}" {htc_name}')
+        bat_fid.write(f'cd {tmp_dir}\n' + f'"{hawc2_exe}" {htc_name}')
     subprocess.call(f'{bat_path}', shell=True)
 
     # 4. load results
@@ -81,9 +79,9 @@ def test_binary_thru_hawc2():
 
     # 5. compare results
     time_vec = np.arange(4, 10)
-    turb_tuples = [('vxt_p0', -1, 'vyg_p0', 1),  # u
-                   ('vyt_p0', -1, 'vxg_p0', 1),  # v
-                   ('vzt_p0', 1, 'vzg_p0', -1)]  # w
+    turb_tuples = [('u_p0', 1, 'vyg_p0', -1),  # u is along -vg
+                   ('v_p0', 1, 'vxg_p0', -1),  # v is along -xg
+                   ('w_p0', 1, 'vzg_p0', -1)]  # w is along .zg
     for py_key, py_sign, h2_key, h2_sign in turb_tuples:
         py_turb = np.interp(time_vec, turb_df.index, py_sign * turb_df[py_key])
         h2_turb = np.interp(time_vec, dat_df.index, h2_sign * dat_df[h2_key])
@@ -91,3 +89,7 @@ def test_binary_thru_hawc2():
 
     # 6. delete temp directory
     shutil.rmtree(tmp_dir)
+
+
+if __name__ == '__main__':
+    test_binary_thru_hawc2()

@@ -10,41 +10,21 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
-from pyconturb.core.simulation import gen_turb, get_magnitudes
-from pyconturb.core.helpers import gen_spat_grid, _spat_colnames
-
-
-def test_iec_mags_sum():
-    """test that the iec magnitudes sum to the right value (or close to)
-    """
-    # given
-    y = [0]  # x-components of turbulent grid
-    z = [70]  # z-components of turbulent grid
-    spat_df = gen_spat_grid(y, z)
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': z,
-              'T': 300, 'dt': 1, 'scale': True}
-    spc_model = 'kaimal'
-    var_theo = np.array([1.834, 1.4672, 0.917]) ** 2
-    # when
-    mags_ksec = get_magnitudes(spat_df, spc_model=spc_model, **kwargs)
-    var_ksec = 2 * (mags_ksec ** 2).sum(axis=0)
-    # then
-    np.testing.assert_allclose(var_ksec, var_theo, rtol=0.01)
+from pyconturb.core.simulation import gen_turb
+from pyconturb.core.wind_profiles import constant_profile
+from pyconturb._utils import gen_spat_grid, _spat_colnames
 
 
 def test_iec_turb_mn_std_dev():
-    """test that iec turbulence has correct mean and std deviation
-    """
+    """test that iec turbulence has correct mean and std deviation"""
     # given
     y, z = 0, [70, 80]
     spat_df = gen_spat_grid(y, z)
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
-              'T': 300, 'dt': 1, 'scale': True}
-    coh_model, spc_model = 'iec', 'kaimal'
+    kwargs = {'u_hub': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_hub': 70, 'T': 300, 'dt': 1}
     sig_theo = np.array([1.834, 1.4672, 0.917, 1.834, 1.4672, 0.917])
     u_theo = np.array([10, 0, 0, 10.27066087, 0, 0])
     # when
-    turb_df = gen_turb(spat_df, coh_model=coh_model, spc_model=spc_model, **kwargs)
+    turb_df = gen_turb(spat_df, **kwargs)
     # then
     np.testing.assert_allclose(sig_theo, turb_df.std(axis=0), atol=0.01, rtol=0.50)
     np.testing.assert_allclose(u_theo, turb_df.mean(axis=0),  atol=0.01)
@@ -55,11 +35,9 @@ def test_con_iec_mn_std_dev():
     """
     # given -- constraining points
     con_spat_df = pd.DataFrame([[0, 0, 0, 0, 70]], columns=_spat_colnames)
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 70,
-              'T': 300, 'dt': 0.5, 'scale': True}
-    coh_model, spc_model, wsp_model = 'iec', 'kaimal', 'iec'
-    con_turb_df = gen_turb(con_spat_df, coh_model=coh_model,
-                           spc_model=spc_model, wsp_model=wsp_model, **kwargs)
+    kwargs = {'u_hub': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_hub': 70, 'T': 300, 'dt': 0.5,}
+    coh_model = 'iec'
+    con_turb_df = gen_turb(con_spat_df, coh_model=coh_model, **kwargs)
     # given -- simulated, constrainted turbulence
     y, z = 0, [70, 72]
     sim_spat_df = gen_spat_grid(y, z)
@@ -68,8 +46,7 @@ def test_con_iec_mn_std_dev():
     # when
     sim_turb_df = gen_turb(sim_spat_df, con_data={'con_spat_df': con_spat_df,
                                                   'con_turb_df': con_turb_df},
-                           coh_model=coh_model, spc_model=spc_model,
-                           wsp_model=wsp_model, **kwargs)
+                           coh_model=coh_model, **kwargs)
     # then (std dev, mean, and regen'd time series should be close)
     np.testing.assert_allclose(sig_theo, sim_turb_df.std(axis=0), atol=0.01, rtol=0.50)
     np.testing.assert_allclose(u_theo, sim_turb_df.mean(axis=0), atol=0.01)
@@ -79,20 +56,24 @@ def test_con_iec_mn_std_dev():
 def test_collocated_turb():
     """if simulation point is collocated with constraint"""
     # given
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'l_c': 340.2, 'z_hub': 75,
-              'T': 300, 'dt': .25, 'scale': True}
-    coh_model, spc_model = 'iec', 'kaimal'
+    kwargs = {'u_hub': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_hub': 75, 'T': 300, 'dt': .25}
+    coh_model = 'iec'
     con_spat_df = pd.DataFrame([[0, 0, 0, 0, 50]], columns=_spat_colnames)
-    con_turb_df = gen_turb(con_spat_df, coh_model=coh_model, spc_model=spc_model,
-                           wsp_model='iec', **kwargs)
+    con_turb_df = gen_turb(con_spat_df, coh_model=coh_model,  **kwargs)
     spat_df = pd.DataFrame([[0, 0, 0, 0, 30],
                             [0, 1, 0, 0, 50]], columns=_spat_colnames)
     theory = con_turb_df.u_p0 - con_turb_df.u_p0.mean()
+    wsp_func = constant_profile()  # zero profile
     # when
     turb_df = gen_turb(spat_df, con_data={'con_spat_df': con_spat_df,
                                           'con_turb_df': con_turb_df},
-                       coh_model=coh_model, spc_model=spc_model,
-                       wsp_model='none', **kwargs)
+                       wsp_func=wsp_func, coh_model=coh_model, **kwargs)
     test = turb_df.u_p1
     # then
     pd.testing.assert_series_equal(theory, test, check_names=False)
+
+
+if __name__ == '__main__':
+    test_iec_turb_mn_std_dev()
+    test_con_iec_mn_std_dev()
+    test_collocated_turb()

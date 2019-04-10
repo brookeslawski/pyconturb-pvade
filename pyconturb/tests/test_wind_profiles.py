@@ -1,51 +1,73 @@
 # -*- coding: utf-8 -*-
-"""Test functions in wind_profiles.py
-
-Author
-------
-Jenni Rinker
-rink@dtu.dk
+"""test functions
 """
 
 import numpy as np
 import pandas as pd
 
-from pyconturb.core.helpers import _spat_colnames
-from pyconturb.core.wind_profiles import get_wsp_profile
+from pyconturb._utils import _spat_colnames
+from pyconturb.core.wind_profiles import constant_profile, power_profile, get_wsp_values
 
 
-def test_get_wsp_profile_iec():
-    """Check the iec value for get_wsp_profile
-    """
+def test_get_mean_wsp_custom():
+    """Verify correct profile for custom profile (constant)"""
     # given
     spat_df = pd.DataFrame([[0, 0, 0, 0, 50],
                             [1, 0, 0, 0, 50],
                             [2, 0, 0, 0, 50],
                             [0, 1, 0, 0, 90]], columns=_spat_colnames)
-    kwargs = {'v_hub': 10, 'i_ref': 0.14, 'ed': 3, 'z_hub': 90}
-    u_theory = np.array([8.890895361, 0, 0, 10])
+    wsp_func = lambda y, z, **kwargs: 4  # constant wind speed
+    u_theory = np.array([4, 0, 0, 4])
     # when
-    wsp_profile = get_wsp_profile(spat_df, wsp_model='iec', **kwargs)
+    wsp_vals = get_wsp_values(spat_df, wsp_func)
     # then
-    np.testing.assert_allclose(u_theory, wsp_profile)
+    np.testing.assert_allclose(u_theory, wsp_vals)
 
 
-def test_get_wsp_profile_data():
-    """Check the data value for get_wsp_profile
-    """
+def test_get_mean_wsp_pwr():
+    """Verify correct profile for power law"""
     # given
-    con_spat_df = pd.DataFrame([[0, 0, 0, 0, 10],
-                                [0, 1, 0, 0, 20],
-                                [1, 1, 0, 0, 20]], columns=_spat_colnames)
-    con_turb_df = pd.DataFrame([[10, 20, 0]], index=[0],
-                               columns=['u_p0', 'u_p1', 'v_p1'])
-    spat_df = pd.DataFrame([[0, 0, 0, 0, 5],
-                            [0, 1, 0, 0, 15],
-                            [0, 2, 0, 0, 25]], columns=_spat_colnames)
-    u_theory = np.array([8.705505633, 15, 20.91279105])
+    kwargs = {'u_hub': 10, 'z_hub': 90, 'alpha': 0.2}
+    spat_df = pd.DataFrame([[0, 0, 0, 0, 50],
+                            [1, 0, 0, 0, 50],
+                            [2, 0, 0, 0, 50],
+                            [0, 1, 0, 0, 90]], columns=_spat_colnames)
+    u_theory = np.array([8.890895361, 0, 0, 10])
+    wsp_func = power_profile(**kwargs)
     # when
-    con_data = {'con_spat_df': con_spat_df, 'con_turb_df': con_turb_df}
-    wsp_profile = get_wsp_profile(spat_df, con_data=con_data,
-                                  wsp_model='data')
+    wsp_vals = get_wsp_values(spat_df, wsp_func, **kwargs)
     # then
-    np.testing.assert_allclose(u_theory, wsp_profile)
+    np.testing.assert_allclose(u_theory, wsp_vals)
+
+
+def test_power_profile():
+    """Verify power law profile"""
+    # given
+    kwargs = {'u_hub': 10, 'z_hub': 90, 'alpha': 0.2}
+    y, z = np.array([0, 0]), np.array([50, 90])
+    u_theory = [8.890895361, 10]
+    # when
+    wsp_func = power_profile(**kwargs)(y, z)
+    # then
+    np.testing.assert_allclose(u_theory, wsp_func)
+
+
+def test_constant_profile():
+    """Verify power law profile"""
+    # given
+    y, z = np.array([0, 0]), np.array([50, 90])
+    u_theory = [[0, 0], [4, 4]]
+    kwargs = {'u_const': 4}
+    # when
+    wsp_prof_0 = constant_profile()(y, z)
+    wsp_prof_c = constant_profile(**kwargs)(y, z)
+    # then
+    np.testing.assert_allclose(u_theory[0], wsp_prof_0)
+    np.testing.assert_allclose(u_theory[1], wsp_prof_c)
+
+
+if __name__ == '__main__':
+    test_get_mean_wsp_custom()
+    test_get_mean_wsp_pwr()
+    test_power_profile()
+    test_constant_profile()
