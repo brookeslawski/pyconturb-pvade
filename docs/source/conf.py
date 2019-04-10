@@ -23,7 +23,7 @@ from pyconturb import __release__
 # -- Project information -----------------------------------------------------
 
 project = 'PyConTurb'
-copyright = '2019, DTU Wind Energy'
+copyright = '2019, Jenni Rinker (DTU Wind Energy)'
 author = 'Jenni Rinker'
 
 # The short X.Y version

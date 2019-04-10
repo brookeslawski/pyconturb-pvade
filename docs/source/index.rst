@@ -4,9 +4,10 @@
 Welcome to PyConTurb
 ===========================================
 
-*- An open-source constrained turbulence generator for loads validation*
+*- An open-source, constrained-turbulence generator for loads validation.*
 
-**Quick links:** :ref:`installation`, :ref:`Get started <overview>`, :ref:`Reporting bugs <overview>`.
+**Quick links:** :ref:`installation`, :ref:`Get started <overview>`, :ref:`Reporting bugs <overview>`,
+`Source code <https://gitlab.windenergy.dtu.dk/rink/pyconturb>`_.
 
 .. image:: ../logo.png
     :align: center
@@ -24,6 +25,9 @@ it be a spatially varying mean or standard deviation or whether it is
 constrained directly to a time series. To get started, follow the instructions
 in the :ref:`installation` section, check out the :ref:`overview` and then look
 at :ref:`examples`.
+
+The source code is located
+`here on GitLab <https://gitlab.windenergy.dtu.dk/rink/pyconturb>`_.
 
 
 Contents:
