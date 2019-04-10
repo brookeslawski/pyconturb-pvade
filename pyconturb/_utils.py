@@ -8,6 +8,8 @@ import pandas as pd
 
 
 _spat_colnames = ['k', 'p_id', 'x', 'y', 'z']  # column names of spatial df
+_DEF_KWARGS = {'u_hub': 10, 'z_hub': 90, 'alpha': 0.2, 'turb_class': 'A',
+               'l_c': 340.2}  # lc for coherence
 _HAWC2_BIN_FMT = '<f'  # HAWC2 binary turbulence datatype
 _HAWC2_TURB_COOR = {'u': -1, 'v': -1, 'w': 1}  # hawc2 turb xyz to uvw
 

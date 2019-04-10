@@ -1,32 +1,78 @@
 # -*- coding: utf-8 -*-
-"""Functions related to the simulation of turbulence
+"""Create an unconstrained or constrained turbulence box.
+
+The main function function, ``gen_turb`` can be used both with and without
+constraining data. Please see the Examples section in the documentation
+to see how to use it.
 """
 import numpy as np
 import pandas as pd
 
-from pyconturb.core.coherence import get_coh_mat
-from pyconturb.core.magnitudes import get_magnitudes
-from pyconturb.core.wind_profiles import get_wsp_values, power_profile
-from pyconturb.core.spectral_models import kaimal_spectrum
-from pyconturb.core.sig_models import iec_sig
-from pyconturb._utils import combine_spat_df, _spat_colnames
+from pyconturb.coherence import get_coh_mat
+from pyconturb.magnitudes import get_magnitudes
+from pyconturb.wind_profiles import get_wsp_values, power_profile
+from pyconturb.spectral_models import kaimal_spectrum
+from pyconturb.sig_models import iec_sig
+from pyconturb._utils import combine_spat_df, _spat_colnames, _DEF_KWARGS
 
 
-_DEF_KWARGS = {'u_hub': 10, 'z_hub': 90, 'alpha': 0.2, 'turb_class': 'A',
-               'T': 600, 'dt': 1, 'l_c': 340.2}  # lc for coherence
-
-
-def gen_turb(sim_spat_df, con_data=None, coh_model='iec',
+def gen_turb(sim_spat_df, T=600, dt=1, con_data=None, coh_model='iec',
              wsp_func=None, sig_func=None, spec_func=None,
              seed=None, mem_gb=0.10, verbose=False, **kwargs):
-    """Generate constrained uvw turbulence box"""
+    """Generate a turbulence box.
+
+    Parameters
+    ----------
+    sim_spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have columns
+        `[k, p_id, x, y, z]`, and each of the `n_sp` rows corresponds to a
+        different spatial location and turbuine component (u, v or w).
+    T : float, optional
+        Total length of time to simulate in seconds. Default is 600.
+    dt : float, optional
+        Time step for generated turbulence in seconds. Default is 1.
+    con_data : dict, optional
+        Optional constraining data for the simulation. This dictionary must
+        have two keyed elements: ``con_spat_df`` and ``con_turb_df``. Both
+        are pandas.DataFrames. Please see the Examples for the format of these
+        dataframes. Default is none.
+    coh_model : str, optional
+        Spatial coherence model specifier. Default is IEC 61400-1.
+    wsp_func : function, optional
+        Function to specify spatial variation of mean wind speed. See details
+        in `Mean wind speed profiles` section.
+    sig_func : function, optional
+        Function to specify spatial variation of turbulence standard deviation.
+        See details in `Turbulence standard deviation` section.
+    spec_func : function, optional
+        Function to specify spatial variation of turbulence power spectrum. See
+        details in `Turbulence spectra` section.
+    seed : int, optional
+        Optional random seed for turbulence generation. Use the same seed and
+        settings to regenerate the same turbulence box.
+    mem_gb : float, optional
+        Size of memory to use when doing the calculations. Increase this number
+        to have faster turbulence generation, but if the number becomes too
+        large the generation will fail.
+    verbose : bool, optional
+        Print extra information during turbulence generation. Default is False.
+    **kwargs
+        Optional keyword arguments to be fed into the
+        spectral/turbulence/profile/etc. models.
+
+    Returns
+    -------
+    turb_df : pandas.DataFrame
+        Generated turbulence box. Each row corresponds to a time step and each
+        columns corresponds to a point/component in ``sim_spat_df``.
+    """
     if verbose:
         print('Beginning turbulence simulation...')
 
-    # assign/create stuff not passed in
-    kwargs = {**_DEF_KWARGS, **kwargs}
+    # assign/create stuff not passed in and add T, dt to kwargs
+    kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'dt': dt}
     if wsp_func is None:
-        wsp_func = power_profile(**kwargs)
+        wsp_func = power_profile
     if spec_func is None:
         spec_func = kaimal_spectrum
     if sig_func is None:

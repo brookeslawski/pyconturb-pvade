@@ -14,9 +14,9 @@ import warnings
 import numpy as np
 import pandas as pd
 
-from pyconturb.core.simulation import gen_turb
+from pyconturb.simulation import gen_turb
+from pyconturb.wind_profiles import constant_profile
 from pyconturb.io.hawc2 import dat_to_df
-from pyconturb.core.wind_profiles import constant_profile
 from pyconturb._utils import gen_spat_grid, make_hawc2_input, df_to_h2turb
 
 
@@ -62,7 +62,7 @@ def test_binary_thru_hawc2():
                 new_fid.write(new_line)
 
     # 4. generate turbulence files and save to csv
-    turb_df = gen_turb(spat_df, coh_model=coh_model, wsp_func=constant_profile(**kwargs),
+    turb_df = gen_turb(spat_df, coh_model=coh_model, wsp_func=constant_profile,
                        **kwargs)
     df_to_h2turb(turb_df, spat_df, tmp_dir)
     turb_df.reset_index().to_csv(csv_path, index=False)

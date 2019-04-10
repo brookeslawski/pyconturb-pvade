@@ -11,9 +11,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pyconturb.core.magnitudes import spc_to_mag, get_magnitudes
-from pyconturb.core.spectral_models import kaimal_spectrum
-from pyconturb.core.sig_models import iec_sig
+from pyconturb.magnitudes import spc_to_mag, get_magnitudes
+from pyconturb.sig_models import iec_sig
+from pyconturb.spectral_models import kaimal_spectrum
 from pyconturb._utils import _spat_colnames, get_freq
 
 

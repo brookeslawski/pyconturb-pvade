@@ -12,8 +12,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pyconturb.core.coherence import get_coh_mat, get_iec_coh_mat, get_3d_coh_mat
-from pyconturb.core.simulation import gen_turb
+from pyconturb.simulation import gen_turb
+from pyconturb.coherence import get_coh_mat, get_iec_coh_mat, get_3d_coh_mat
 from pyconturb._utils import gen_spat_grid, _spat_colnames
 
 

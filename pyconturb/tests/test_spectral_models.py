@@ -10,8 +10,8 @@ rink@dtu.dk
 import numpy as np
 import pandas as pd
 
+from pyconturb.spectral_models import kaimal_spectrum, get_spec_values
 from pyconturb._utils import _spat_colnames
-from pyconturb.core.spectral_models import kaimal_spectrum, get_spec_values
 
 
 def test_get_spec_values_custom():

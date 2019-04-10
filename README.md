@@ -1,6 +1,7 @@
 [![pipeline status](https://gitlab.windenergy.dtu.dk/rink/pyconturb/badges/master/pipeline.svg)](https://gitlab.windenergy.dtu.dk/rink/pyconturb/commits/master)
 [![coverage report](https://gitlab.windenergy.dtu.dk/rink/pyconturb/badges/master/coverage.svg)](https://gitlab.windenergy.dtu.dk/rink/pyconturb/commits/master)
 
+![PyConTurb](https://gitlab.windenergy.dtu.dk/rink/pyconturb/raw/master/docs/logo.png)
 
 # PyConTurb: Constrained Stochastic Turbulence for Wind Energy Applications
 
@@ -12,36 +13,6 @@ Despite the package's name, the main function, `gen_turb` can be used with or
 without constraining time series. Without the constraining time series, it is
 the Veers simulation method.
 
-## Something wrong/missing?
+## Installation, Examples, Bug Reporting and More
 
-If you find an issue with the code or you'd like a new feature, please submit an
-issue through our [issue tracker](https://gitlab.windenergy.dtu.dk/rink/pyconturb/issues). 
-**NOTE!** Please use the Bug template for the issue when submitting bug reports.
-
-## Installation
-
-Please note the code only runs on Python 3.6 or higher.
-
-Simple installation of v1.0 (non-editable source code, not most updated version):  
-   `pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@v1.0`  
-If you want to run the examples, you will also need Jupyter and matplotlib:  
-    `pip install jupyter matplotlib`
-
-Developer install:  
-```
-git clone https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
-pip install pytest pytest-cov jupyter matplotlib
-cd pyconturb
-pip install -e .
-
-```
- 
-## Examples
-
-There is an example Jupyter notebook in the examples folder. To run the
-notebook, do the following:
-1. Open an Anaconda prompt.
-2. Navigate to the folder with the notebook.
-3. Enter `jupyter notebook` into the prompt.
-4. When your internet browser opens up, click on the notebook. It should open
-in a new tab.
+Please see the [documentation website](https://rink.pages.windenergy.dtu.dk/pyconturb/).
