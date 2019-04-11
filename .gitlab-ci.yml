@@ -16,8 +16,11 @@ pages:  # "pages" is a job specifically for GitLab pages [1]
   image: continuumio/anaconda3:latest
   stage:  # build, test, deploy defined by default [2]
     deploy
-  script:  # use sphinx to build docs, move to public page
+  before_script:  # make sure make and pandoc are installed
+  - apt-get update
+  - apt-get install --reinstall make
   - apt-get install -y pandoc
+  script:  # use sphinx to build docs, move to public page
   - pip install -r dev_reqs.txt
   - pip install -e .
   - cd docs; make html
