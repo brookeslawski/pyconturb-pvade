@@ -13,7 +13,7 @@ test_pyconturb:  # name the job what we like
 
 # ===== build documentation =====
 pages:  # "pages" is a job specifically for GitLab pages [1]
-  image: continuumio/anaconda3:latest  anaconda image broken atm
+  image: continuumio/anaconda3:latest
   stage:  # build, test, deploy defined by default [2]
     deploy
   script:  # use sphinx to build docs, move to public page
