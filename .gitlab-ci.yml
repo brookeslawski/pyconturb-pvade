@@ -1,13 +1,9 @@
-
 # ===== TEST linux=====
 test_pyconturb:  # name the job what we like
-  #image: continuumio/anaconda3:latest  anaconda image broken atm
-  image: python:3.6-slim
+  image: continuumio/anaconda3:latest
+  #image: python:3.6-slim
   stage:  # build, test, deploy defined by default [2]
     test
-  before_script:  # run first line to fix python docker not having git
-  - apt-get update
-  - apt-get install -y git
   script:  # install dev options, then code, then run tests and do coverage report
   - pip install -r dev_reqs.txt
   - pip install -e .
@@ -17,18 +13,11 @@ test_pyconturb:  # name the job what we like
 
 # ===== build documentation =====
 pages:  # "pages" is a job specifically for GitLab pages [1]
-  #image: continuumio/anaconda3:latest  anaconda image broken atm
-  image: python:3.6-slim
+  image: continuumio/anaconda3:latest  anaconda image broken atm
   stage:  # build, test, deploy defined by default [2]
     deploy
-  before_script:
-  # run first line to fix python docker not having git
-  - apt-get update
-  - apt-get install -y git
-  - apt-get install --reinstall make
-  # need pandoc for notebook linking in docs
-  - apt-get install -y pandoc
   script:  # use sphinx to build docs, move to public page
+  - apt-get install -y pandoc
   - pip install -r dev_reqs.txt
   - pip install -e .
   - cd docs; make html
