@@ -79,9 +79,9 @@ def test_binary_thru_hawc2():
 
     # 5. compare results
     time_vec = np.arange(4, 10)
-    turb_tuples = [('u_p0', 1, 'vyg_p0', -1),  # u is along -vg
-                   ('v_p0', 1, 'vxg_p0', -1),  # v is along -xg
-                   ('w_p0', 1, 'vzg_p0', -1)]  # w is along .zg
+    turb_tuples = [('u_p0', 1, 'vyg_p0', 1),  # u is along vg
+                   ('v_p0', 1, 'vxg_p0', 1),  # v is along xg
+                   ('w_p0', 1, 'vzg_p0', -1)]  # w is along -zg
     for py_key, py_sign, h2_key, h2_sign in turb_tuples:
         py_turb = np.interp(time_vec, turb_df.index, py_sign * turb_df[py_key])
         h2_turb = np.interp(time_vec, dat_df.index, h2_sign * dat_df[h2_key])

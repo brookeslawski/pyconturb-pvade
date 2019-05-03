@@ -44,8 +44,7 @@ def df_to_h2turb(turb_df, spat_df, path, prefix=''):
     nz = len(set(spat_df.z.values))
     # make and save binary files for all three components
     for c in 'uvw':
-        coeff = _HAWC2_TURB_COOR[c]
-        arr = coeff * turb_df.filter(regex=f'{c}_', axis=1).values.reshape((nx, ny, nz))
+        arr = turb_df.filter(regex=f'{c}_', axis=1).values.reshape((nx, ny, nz))
         bin_path = os.path.join(path, f'{prefix}{c}.bin')
         with open(bin_path, 'wb') as bin_fid:
             arr.astype(np.dtype(_HAWC2_BIN_FMT)).tofile(bin_fid)
@@ -96,24 +95,12 @@ def h2turb_to_df(spat_df, path, prefix=''):
     turb_df = pd.DataFrame()
     for c in 'uvw':
         comp_path = os.path.join(path, f'{prefix}{c}.bin')
-        arr = _HAWC2_TURB_COOR[c] * h2turb_to_arr(spat_df, comp_path)
+        arr = h2turb_to_arr(spat_df, comp_path)
         nx, ny, nz = arr.shape
         comp_df = pd.DataFrame(arr.reshape(nx, ny*nz)).add_prefix(f'{c}_p')
         turb_df = turb_df.join(comp_df, how='outer')
     turb_df = turb_df[[f'{c}_p{i}' for i in range(2) for c in 'uvw']]
     return turb_df
-
-
-def h2t_to_uvw(turb_df):
-    """convert turbulence dataframe with hawc2 turbulence coord sys to uvw
-    """
-    new_turb_df = pd.DataFrame(index=turb_df.index)
-    h2_comps = ['vxt', 'vyt', 'vzt']
-    for ic, c in enumerate('uvw'):
-        new_cols = [f'{c}_p{i}' for i in range(turb_df.shape[1] // 3)]
-        new_turb_df[new_cols] = _HAWC2_TURB_COOR[c] \
-            * turb_df.filter(regex=f'{h2_comps[ic]}_', axis=1)
-    return new_turb_df
 
 
 def make_hawc2_input(turb_dir, spat_df, **kwargs):
