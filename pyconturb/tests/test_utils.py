@@ -82,18 +82,6 @@ def test_get_freq_values():
     np.testing.assert_almost_equal(f_theo, f_out)
 
 
-def test_h2t_to_uvw():
-    """test converting turb_df to uvw coor sys
-    """
-    # given
-    turb_df = pd.DataFrame([[1, 1, 1]], index=[1], columns=[f'v{c}t_p0' for c in 'xyz'])
-    theo_df = pd.DataFrame([[-1, -1, 1]], index=[1], columns=['u_p0', 'v_p0', 'w_p0'])
-    # when
-    uvw_turb_df = utils.h2t_to_uvw(turb_df)
-    # then
-    pd.testing.assert_frame_equal(uvw_turb_df, theo_df, check_dtype=False)
-
-
 def test_make_hawc2_input():
     """verify correct strings for hawc2 input"""
     # given
@@ -136,6 +124,6 @@ if __name__ == '__main__':
     test_pctdf_to_h2turb()
     test_gen_spat_grid()
     test_get_freq_values()
-    test_h2t_to_uvw()
+#    test_h2t_to_uvw()
     test_make_hawc2_input()
     test_rotate_time_series()
