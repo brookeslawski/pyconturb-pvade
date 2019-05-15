@@ -28,7 +28,7 @@ def test_get_sig_custom():
 def test_get_sig_iec():
     """verify correct sig for iec"""
     # given
-    kwargs = {'turb_class': 'A', 'u_hub': 10, 'z_hub': 90, 'alpha': 0.2}
+    kwargs = {'turb_class': 'A', 'u_ref': 10, 'z_ref': 90, 'alpha': 0.2}
     spat_df = pd.DataFrame([[0, 0, 0, 0, 50],
                             [1, 0, 0, 0, 50],
                             [2, 0, 0, 0, 50],
@@ -51,7 +51,7 @@ def test_iec_sig_bad_tclass():
 def test_iec_sig_value():
     """verify the correct numbers are being produced"""
     # given
-    kwargs = {'turb_class': 'A', 'u_hub': 10, 'z_hub': 90, 'alpha': 0.2}
+    kwargs = {'turb_class': 'A', 'u_ref': 10, 'z_ref': 90, 'alpha': 0.2}
     k, y, z = np.array([2, 1, 0]), np.array([0, 0, 0]), np.array([50, 50, 90])
     sig_theory = [1.048, 1.6768, 2.096]
     # when

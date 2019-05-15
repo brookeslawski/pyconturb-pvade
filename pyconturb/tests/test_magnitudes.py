@@ -22,7 +22,7 @@ def test_get_mags_iec():
     # given
     spat_df = pd.DataFrame([[0, 0, 0, 0, 90],
                             [1, 0, 0, 0, 90]], columns=_spat_colnames)
-    kwargs = {'T': 2, 'dt': 1, 'turb_class': 'a', 'z_hub': 90, 'u_hub': 10, 'alpha': 0.2}
+    kwargs = {'T': 2, 'dt': 1, 'turb_class': 'a', 'z_ref': 90, 'u_ref': 10, 'alpha': 0.2}
     sig_func, spec_func = iec_sig, kaimal_spectrum
     mags_theo = [[0, 0], [2.096, 1.6768]]
     t, f = get_freq(**kwargs)

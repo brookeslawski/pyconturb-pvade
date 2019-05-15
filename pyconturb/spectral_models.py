@@ -48,9 +48,9 @@ def get_spec_values(f, spat_df, spec_func, **kwargs):
     return spec_func(f, spat_df.k, spat_df.y, spat_df.z, **kwargs)
 
 
-def kaimal_spectrum(f, k, y, z, u_hub=_DEF_KWARGS['u_hub'], **kwargs):
+def kaimal_spectrum(f, k, y, z, u_ref=_DEF_KWARGS['u_ref'], **kwargs):
     """Kaimal PSD as specified in IEC 61400-1 Ed. 3.
-    f is (nf,); k, y and z are (n_sp,), u_hub is float or int. returns (nf, n_sp,).
+    f is (nf,); k, y and z are (n_sp,), u_ref is float or int. returns (nf, n_sp,).
     No std scaling -- that's done with the magnitudes.
 
     Parameters
@@ -65,8 +65,8 @@ def kaimal_spectrum(f, k, y, z, u_hub=_DEF_KWARGS['u_hub'], **kwargs):
     z : array-like
         [m] Location of point(s) in the vertical direction. Can be int/float,
         np.array or pandas.Series.
-    u_hub : int/float, optional
-        [m/s] Mean wind speed at hub-height.
+    u_ref : int/float, optional
+        [m/s] Mean wind speed at reference height.
     **kwargs
         Unused (optional) keyword arguments. 
 
@@ -75,11 +75,11 @@ def kaimal_spectrum(f, k, y, z, u_hub=_DEF_KWARGS['u_hub'], **kwargs):
     sig_values : np.array
         [m/s] Turbulence standard deviation(s) at the specified location(s).
     """
-    kwargs = {**{'u_hub': u_hub}, **kwargs}  # add dflts if not given
+    kwargs = {**{'u_ref': u_ref}, **kwargs}  # add dflts if not given
     k, y, z = [np.asarray(x) for x in (k, y, z)]  # in case pd.series passed in
     f = np.reshape(f, (-1, 1))  # convert to column array
     lambda_1 = 0.7 * z * (z < 60) + 42 * (z >= 60)  # length scale changes with z
     l_k = lambda_1 * (8.1 * (k == 0) + 2.7 * (k == 1) + 0.66 * (k == 2))
-    tau = np.reshape((l_k / kwargs['u_hub']), (1, -1))  # L_k / U. row vector
+    tau = np.reshape((l_k / kwargs['u_ref']), (1, -1))  # L_k / U. row vector
     spc_arr = (4 * tau) / np.power(1. + 6 * tau * f, 5. / 3.)  # Kaimal 1972
     return spc_arr.astype(float)  # pandas causes object issues, ensure float

@@ -8,7 +8,7 @@ import pandas as pd
 
 
 _spat_colnames = ['k', 'p_id', 'x', 'y', 'z']  # column names of spatial df
-_DEF_KWARGS = {'u_hub': 10, 'z_hub': 90, 'alpha': 0.2, 'turb_class': 'A',
+_DEF_KWARGS = {'u_ref': 10, 'z_ref': 90, 'alpha': 0.2, 'turb_class': 'A',
                'l_c': 340.2}  # lc for coherence
 _HAWC2_BIN_FMT = '<f'  # HAWC2 binary turbulence datatype
 _HAWC2_TURB_COOR = {'u': -1, 'v': -1, 'w': 1}  # hawc2 turb xyz to uvw
@@ -107,14 +107,14 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
     """return strings for the hawc2 input files
     """
     # string of center position
-    z_hub = kwargs['z_hub']
+    z_ref = kwargs['z_ref']
     str_cntr_pos0 = '  center_pos0             0.0 0.0 ' + \
-        f'{-z_hub:.1f} ; hub height\n'
+        f'{-z_ref:.1f} ; hub height\n'
 
     # string for mann model block
     T, dt = kwargs['T'], kwargs['dt']
     y, z = set(spat_df.y.values), set(spat_df.z.values)
-    n_x, du = int(np.ceil(T / dt)), dt * kwargs['u_hub']
+    n_x, du = int(np.ceil(T / dt)), dt * kwargs['u_ref']
     n_y, dv = len(y), (max(y) - min(y)) / (len(y) - 1)
     n_z, dw = len(z), (max(z) - min(z)) / (len(z) - 1)
     str_mann = '  begin mann ;\n' + \

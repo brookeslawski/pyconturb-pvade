@@ -24,7 +24,7 @@ def test_main_default():
     spat_df = pd.DataFrame([[0, 0, 0, 0, 0],
                             [0, 1, 0, 0, 1]], columns=_spat_colnames)
     freq = 1
-    kwargs = {'u_hub': 1, 'l_c': 1}
+    kwargs = {'u_ref': 1, 'l_c': 1}
     coh_theory = np.array([[1, 5.637379774e-6],
                            [5.637379774e-6, 1]])
     # when
@@ -50,7 +50,7 @@ def test_iec_badedition():
     # given
     spat_df = pd.DataFrame([[0, 0, 0, 0, 0]], columns=_spat_colnames)
     freq = 1
-    kwargs = {'ed': 4, 'u_hub': 12, 'l_c': 340.2}
+    kwargs = {'ed': 4, 'u_ref': 12, 'l_c': 340.2}
     # when & then
     with pytest.raises(ValueError):
         get_iec_coh_mat(spat_df, freq, **kwargs)
@@ -62,7 +62,7 @@ def test_iec_missingkwargs():
     # given
     spat_df = pd.DataFrame([[0, 0, 0, 0, 0],
                             [0, 1, 0, 0, 1]], columns=_spat_colnames)
-    freq, kwargs = 1, {'ed': 3, 'u_hub': 12}
+    freq, kwargs = 1, {'ed': 3, 'u_ref': 12}
     # when & then
     with pytest.raises(ValueError):
         get_iec_coh_mat(freq, spat_df, **kwargs)
@@ -78,7 +78,7 @@ def test_iec_value():
                                 [comp2, 1, 0, 0, 1]],
                                columns=_spat_colnames)
         freq = 0.5
-        kwargs = {'ed': 3, 'u_hub': 2, 'l_c': 3}
+        kwargs = {'ed': 3, 'u_ref': 2, 'l_c': 3}
         coh_theory = np.array([[1., coh2], [coh2, 1.]])
         # when
         coh = get_iec_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
@@ -96,7 +96,7 @@ def test_3d_value():
                                 [comp, 1, 0, 0, 1]],
                                columns=_spat_colnames)
         freq = 0.5
-        kwargs = {'u_hub': 2, 'l_c': 3}
+        kwargs = {'u_ref': 2, 'l_c': 3}
         coh_theory = np.array([[1., coh2], [coh2, 1.]])
         # when
         coh = get_3d_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
@@ -111,7 +111,7 @@ def test_verify_iec_sim_coherence():
     # given
     y, z = [0], [70, 80]
     spat_df = gen_spat_grid(y, z)
-    kwargs = {'u_hub': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_hub': 70,
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70,
               'T': 300, 'dt': 100}
     coh_model = 'iec'
     n_real = 1000  # number of realizations in ensemble

@@ -87,7 +87,7 @@ def test_make_hawc2_input():
     # given
     turb_dir = '.'
     spat_df = utils.gen_spat_grid([-10, 10], [109, 129])
-    kwargs = {'z_hub': 119, 'T': 600, 'dt': 1, 'u_hub': 10}
+    kwargs = {'z_ref': 119, 'T': 600, 'dt': 1, 'u_ref': 10}
     str_cntr_theo = '  center_pos0             0.0 0.0 -119.0 ; hub height\n'
     str_mann_theo = ('  begin mann ;\n    filename_u ./u.bin ; \n'
                      + '    filename_v ./v.bin ; \n    filename_w ./w.bin ; \n'
