@@ -27,8 +27,8 @@ def test_binary_thru_hawc2():
     z_hub, l_blade = 119, 90  # hub height, blade length
     y = [-l_blade, l_blade]  # x-components of turb grid
     z = [z_hub - l_blade, z_hub, z_hub + l_blade]  # z-components of turb grid
-    kwargs = {'u_hub': 10, 'turb_class': 'B', 'l_c': 340.2,
-              'z_hub': z_hub, 'T': 50, 'dt': 1.}
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2,
+              'z_ref': z_hub, 'T': 50, 'dt': 1.}
     coh_model = 'iec'
     spat_df = gen_spat_grid(y, z)
 
@@ -52,7 +52,7 @@ def test_binary_thru_hawc2():
         os.mkdir(tmp_dir)
 
     # 2. copy htc file there, replacing values
-    T, dt, wsp = kwargs['T'], kwargs['dt'], kwargs['u_hub']  # needed in htc
+    T, dt, wsp = kwargs['T'], kwargs['dt'], kwargs['u_ref']  # needed in htc
     str_cntr_pos0, str_mann, str_output = make_hawc2_input(tmp_dir,
                                                            spat_df, **kwargs)
     with open(htc_path, 'r') as old_fid:

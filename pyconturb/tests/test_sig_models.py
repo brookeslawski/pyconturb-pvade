@@ -28,7 +28,7 @@ def test_get_sig_custom():
 def test_get_sig_iec():
     """verify correct sig for iec"""
     # given
-    kwargs = {'turb_class': 'A', 'u_ref': 10, 'z_hub': 90, 'alpha': 0.2}
+    kwargs = {'turb_class': 'A', 'u_ref': 10, 'z_ref': 90, 'alpha': 0.2}
     spat_df = pd.DataFrame([[0, 0, 0, 0, 50],
                             [1, 0, 0, 0, 50],
                             [2, 0, 0, 0, 50],
