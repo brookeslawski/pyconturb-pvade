@@ -57,7 +57,7 @@ def iec_sig(k, y, z, turb_class=_DEF_KWARGS['turb_class'], **kwargs):
     turb_class : str, optional
         [-] Turbulence class.
     **kwargs
-        Unused (optional) keyword arguments. 
+        Unused (optional) keyword arguments.
 
     Returns
     -------
@@ -67,6 +67,6 @@ def iec_sig(k, y, z, turb_class=_DEF_KWARGS['turb_class'], **kwargs):
     kwargs = {**{'turb_class': turb_class}, **kwargs}  # add dflts if not given
     assert kwargs['turb_class'].lower() in 'abc', 'Invalid or no turbulence class!'
     i_ref = {'a': 0.16, 'b': 0.14, 'c': 0.12}[kwargs['turb_class'].lower()]
-    sig1 = i_ref * (0.75 * kwargs['u_hub'] + 5.6)  # std dev in u
+    sig1 = i_ref * (0.75 * kwargs['u_ref'] + 5.6)  # std dev in u
     sig_k = sig1 * np.asarray(1.0 * (k == 0) + 0.8 * (k == 1) + 0.5 * (k == 2))
     return np.array(sig_k, dtype=float)

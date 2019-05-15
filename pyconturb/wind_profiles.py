@@ -44,7 +44,7 @@ def get_wsp_values(spat_df, wsp_func, **kwargs):
     return np.array(wsp_values)  # convert to array in case series given
 
 
-def constant_profile(y, z, u_const=0, **kwargs):
+def constant_profile(y, z, u_ref=0, **kwargs):
     """Constant (or zero) mean wind speed.
 
     Parameters
@@ -55,21 +55,21 @@ def constant_profile(y, z, u_const=0, **kwargs):
     z : array-like
         [m] Location of point(s) in the vertical direction. Can be int/float,
         np.array or pandas.Series.
-    u_const : int/float, optional
+    u_ref : int/float, optional
         [m/s] Mean wind speed at all locations.
     **kwargs
-        Unused (optional) keyword arguments. 
+        Unused (optional) keyword arguments.
 
     Returns
     -------
     wsp_values : np.array
         [m/s] Mean wind speeds at the specified location(s).
     """
-    kwargs = {**{'u_const': u_const}, **kwargs}  # if not given, add to kwargs
-    return np.ones_like(y) * kwargs['u_const']
+    kwargs = {**{'u_ref': u_ref}, **kwargs}  # if not given, add to kwargs
+    return np.ones_like(y) * kwargs['u_ref']
 
 
-def power_profile(y, z, u_hub=_DEF_KWARGS['u_hub'], z_hub=_DEF_KWARGS['z_hub'],
+def power_profile(y, z, u_ref=_DEF_KWARGS['u_ref'], z_ref=_DEF_KWARGS['z_ref'],
                   alpha=_DEF_KWARGS['alpha'], **kwargs):
     """Power-law profile with height.
 
@@ -81,10 +81,10 @@ def power_profile(y, z, u_hub=_DEF_KWARGS['u_hub'], z_hub=_DEF_KWARGS['z_hub'],
     z : array-like
         [m] Location of point(s) in the vertical direction. Can be int/float,
         np.array or pandas.Series.
-    u_hub : int/float, optional
-        [m/s] Mean wind speed at hub-height.
-    z_hub : int/float, optional
-        [m] Hub height.
+    u_ref : int/float, optional
+        [m/s] Mean wind speed at reference height.
+    z_ref : int/float, optional
+        [m] Reference height.
     alpha : int/float, optional
         [-] Coefficient for the power law.
     **kwargs
@@ -95,6 +95,6 @@ def power_profile(y, z, u_hub=_DEF_KWARGS['u_hub'], z_hub=_DEF_KWARGS['z_hub'],
     wsp_values : np.array
         [m/s] Mean wind speed(s) at the specified location(s).
     """
-    kwargs = {**{'u_hub': u_hub, 'z_hub': z_hub, 'alpha': alpha},
+    kwargs = {**{'u_ref': u_ref, 'z_ref': z_ref, 'alpha': alpha},
               **kwargs}  # if not given, add defaults to kwargs
-    return kwargs['u_hub'] * (z / kwargs['z_hub']) ** kwargs['alpha']
+    return kwargs['u_ref'] * (z / kwargs['z_ref']) ** kwargs['alpha']

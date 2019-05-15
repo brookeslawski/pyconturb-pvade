@@ -29,7 +29,7 @@ def get_iec_coh_mat(freq, spat_df,
     """
     if kwargs['ed'] != 3:  # only allow edition 3
         raise ValueError('Only edition 3 is permitted.')
-    if any([k not in kwargs.keys() for k in ['u_hub', 'l_c']]):  # check kwargs
+    if any([k not in kwargs.keys() for k in ['u_ref', 'l_c']]):  # check kwargs
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
     freq = np.array(freq).reshape(1, -1)
@@ -45,7 +45,7 @@ def get_iec_coh_mat(freq, spat_df,
     mask = ((spat_df.loc[ii, 'k'].values == 0) &
             (spat_df.loc[jj, 'k'].values == 0))
     coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
-                                       kwargs['u_hub'] * freq)**2
+                                       kwargs['u_ref'] * freq)**2
                                       + (0.12 * r[mask].reshape(-1, 1) /
                                          kwargs['l_c'])**2))
     coh_mat[ii[mask], jj[mask], :] = coh_values
@@ -57,7 +57,7 @@ def get_3d_coh_mat(freq, spat_df,
                    **kwargs):
     """Create coherence matrix with 3d coherence for given frequencies
     """
-    if any([k not in kwargs.keys() for k in ['u_hub', 'l_c']]):  # check kwargs
+    if any([k not in kwargs.keys() for k in ['u_ref', 'l_c']]):  # check kwargs
         raise ValueError('Missing keyword arguments for IEC coherence model')
 
     # intermediate variables
@@ -76,7 +76,7 @@ def get_3d_coh_mat(freq, spat_df,
     mask = ((spat_df.loc[ii, 'k'].values == 0) &
             (spat_df.loc[jj, 'k'].values == 0))
     coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
-                                       kwargs['u_hub'] * freq)**2
+                                       kwargs['u_ref'] * freq)**2
                                       + (0.12 * r[mask].reshape(-1, 1) /
                                          kwargs['l_c'])**2))
     coh_mat[ii[mask], jj[mask], :] = coh_values
@@ -86,7 +86,7 @@ def get_3d_coh_mat(freq, spat_df,
     mask = ((spat_df.loc[ii, 'k'].values == 1) &
             (spat_df.loc[jj, 'k'].values == 1))
     coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
-                                       kwargs['u_hub'] * freq)**2
+                                       kwargs['u_ref'] * freq)**2
                                       + (0.12 * r[mask].reshape(-1, 1) /
                                          (kwargs['l_c'] * 2.7 / 8.1))**2))
     coh_mat[ii[mask], jj[mask], :] = coh_values
@@ -96,7 +96,7 @@ def get_3d_coh_mat(freq, spat_df,
     mask = ((spat_df.loc[ii, 'k'].values == 2) &
             (spat_df.loc[jj, 'k'].values == 2))
     coh_values = np.exp(-12 * np.sqrt((r[mask].reshape(-1, 1) /
-                                       kwargs['u_hub'] * freq)**2
+                                       kwargs['u_ref'] * freq)**2
                                       + (0.12 * r[mask].reshape(-1, 1) /
                                          (kwargs['l_c'] * 0.66 / 8.1))**2))
     coh_mat[ii[mask], jj[mask], :] = coh_values

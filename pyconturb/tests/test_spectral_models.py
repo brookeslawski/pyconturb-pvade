@@ -50,7 +50,7 @@ def test_kaimal_spectrum_value():
     spat_df = pd.DataFrame([[0, 0, 0, 0, 50],
                             [1, 0, 0, 0, 70]], columns=_spat_colnames)
     f = [0.5, 2.0]
-    kwargs =  {'u_hub': 10}
+    kwargs =  {'u_ref': 10}
     s_theory = np.array([[0.0676126976, 0.1210076452],  # s_u(0.5), s_v(0.5))
                          [0.0068066176, 0.0124465662]])  # s_u(2.0), s_v(2.0))
     # when (check input: series and np.array)
