@@ -7,7 +7,7 @@ test_pyconturb:  # name the job what we like
   script:  # install dev options, then code, then run tests and do coverage report
   - pip install -r dev_reqs.txt
   - pip install -e .
-  - python -m pytest -m "not long" --cov-report term-missing:skip-covered --cov=pyconturb --cov-config .coveragerc
+  - python -m pytest -m "not skipci" --cov-report term-missing:skip-covered --cov=pyconturb --cov-config .coveragerc
   tags:  # only runners with this tag can do the job [3]
   - python
 

@@ -117,7 +117,7 @@ def dat_to_df(path, n_scns=None, channel_names=None, sel_df=None,
     """
     # load necessary info if not passed in
     if n_scns is None:  # get number of scans if not passed in
-        n_scns = n_scns = get_num_scans(path)
+        n_scns = get_num_scans(path)
     if channel_names is None:  # get channel names if not passed in
         channel_names = get_unique_chnl_names(path)
     if sel_df is None:  # get .sel dataframe if not passed in
