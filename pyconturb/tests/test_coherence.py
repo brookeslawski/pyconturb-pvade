@@ -104,7 +104,8 @@ def test_3d_value():
         np.testing.assert_allclose(coh, coh_theory, atol=1e-6)
 
 
-@pytest.mark.long  # mark this as a slow test
+@pytest.mark.slow  # mark this as a slow test
+@pytest.mark.skipci  # don't run in CI
 def test_verify_iec_sim_coherence():
     """check that the simulated box has the right coherence
     """
