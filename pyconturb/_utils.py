@@ -5,27 +5,28 @@ import os
 
 import numpy as np
 import pandas as pd
+import scipy.interpolate as sciint
 
 
-_spat_colnames = ['k', 'p_id', 'x', 'y', 'z']  # column names of spatial df
-_DEF_KWARGS = {'u_ref': 10, 'z_ref': 90, 'alpha': 0.2, 'turb_class': 'A',
-               'l_c': 340.2}  # lc for coherence
+_spat_rownames = ['k', 'x', 'y', 'z']  # row names of spatial df
+_DEF_KWARGS = {'u_ref': 0, 'z_ref': 90, 'alpha': 0.2, 'turb_class': 'A',
+               'l_c': 340.2}  # lc for coherence ***NOTE THESE OVERWRITE FUNCTION DEFS
 _HAWC2_BIN_FMT = '<f'  # HAWC2 binary turbulence datatype
 _HAWC2_TURB_COOR = {'u': -1, 'v': -1, 'w': 1}  # hawc2 turb xyz to uvw
 
 
-def combine_spat_df(top_df, bot_df, drop_duplicates=True):
-    """combine two spatial dataframes, changing point index of right_df
+def combine_spat_con(spat_df, con_tc, drop_duplicates=True):
+    """Add constraining points in TimeConstraint to spat_df. NOTE constraints must come
+    first or gen_turb will break. ALSO keep the data rows! Need them for corr.
     """
-    top_df, bot_df = top_df.copy(), bot_df.copy()  # no change original when update p_id
-    top_df.p_id -= top_df.p_id.min()  # p_id must start at zero
-    bot_df.p_id -= bot_df.p_id.min()
-    if top_df.size:  # if non-empty top_df, add p_id of top to bot_df
-        bot_df.p_id += top_df.p_id.max() + 1
-    comb_df = pd.concat((top_df, bot_df))
+    con_spat_df = con_tc.get_spat().add_suffix('_con')
+    if (set(spat_df.columns).intersection(set(con_spat_df.columns)) and (con_tc.size)):
+        raise ValueError('Prohibited spat_df/con_tc column names! No column in spat_df' +
+                         ' may have the same name as one on con_tc with "_con" ' +
+                         'appended.')
+    comb_df = pd.concat((con_spat_df, spat_df), axis=1)
     if drop_duplicates:
-        comb_df = comb_df.drop_duplicates(subset=['k', 'x', 'y', 'z'])
-    comb_df = comb_df.reset_index(drop=True)
+        comb_df = comb_df.T.drop_duplicates().T
     return comb_df
 
 
@@ -40,8 +41,8 @@ def df_to_h2turb(turb_df, spat_df, path, prefix=''):
        along y.
     """
     nx = turb_df.shape[0]  # turbulence dimensions for reshaping
-    ny = len(set(spat_df.y.values))
-    nz = len(set(spat_df.z.values))
+    ny = len(set(spat_df.loc['y'].values))
+    nz = len(set(spat_df.loc['z'].values))
     # make and save binary files for all three components
     for c in 'uvw':
         arr = turb_df.filter(regex=f'{c}_', axis=1).values.reshape((nx, ny, nz))
@@ -60,14 +61,38 @@ def gen_spat_grid(y, z, comps=[0, 1, 2]):
     coordinate system).
     """
     ys, zs = np.meshgrid(y, z)  # make a meshgrid
-    ks = np.array(comps)  # sanitizing
+    ks = np.array(comps, dtype=int)  # sanitizing
     xs = np.zeros_like(ys)  # all points in a plane
-    ps = np.arange(xs.size)  # point indices
+    col_names = [f'{"uvw"[k]}_p{ip}' for ip in range(xs.size) for k in ks]
     spat_arr = np.c_[np.tile(comps, xs.size),
-                     np.repeat(np.c_[ps, xs.T.ravel(), ys.T.ravel(), zs.T.ravel()],
-                               ks.size, axis=0)]  # create array using numpy
-    spat_df = pd.DataFrame(spat_arr, columns=_spat_colnames)  # create dataframe
-    return spat_df
+                     np.repeat(np.c_[xs.T.ravel(), ys.T.ravel(), zs.T.ravel()],
+                               ks.size, axis=0)].T  # create array using numpy
+    return pd.DataFrame(spat_arr, index=_spat_rownames, columns=col_names)
+
+
+def clean_turb(spat_df, all_spat_df, turb_df):
+    """Remove the columns we don't return and rename the rest correctly"""
+    # drop the columns that aren't in spat_df
+    drop_cols = all_spat_df.apply(lambda col: not np.all(col.values == spat_df.values.T,
+                                                         axis=1).sum()).values
+    turb_df.drop(turb_df.columns[drop_cols], axis=1, inplace=True)
+    all_spat_df.drop(all_spat_df.columns[drop_cols], axis=1, inplace=True)
+    # for each column in all_spat_df, find the correct name using spat_df and rename it
+    spat_xyz = spat_df.loc[['x', 'y', 'z']].T.drop_duplicates().T
+    for colname in all_spat_df:
+        col = all_spat_df[colname]
+        k, x, y, z = col.values
+        pid = np.all(np.array([x, y, z]) == spat_xyz.values.T, axis=1).argmax()
+        new_name = f'{"uvw"[int(k)]}_p{pid}'
+        turb_df.rename(columns={colname: new_name}, inplace=True)
+    # order according to spat_df
+    col_names = []
+    for colname in spat_df:
+        col = spat_df[colname]
+        k, x, y, z = col.values
+        pid = np.all(np.array([x, y, z]) == spat_xyz.values.T, axis=1).argmax()
+        col_names.append(f'{"uvw"[int(k)]}_p{pid}')
+    return turb_df[col_names]
 
 
 def get_freq(**kwargs):
@@ -81,7 +106,7 @@ def get_freq(**kwargs):
 
 def h2turb_to_arr(spat_df, path):
     """raw-load a hawc2 turbulent binary file to numeric array"""
-    ny, nz = pd.unique(spat_df.y).size, pd.unique(spat_df.z).size
+    ny, nz = pd.unique(spat_df.loc['y']).size, pd.unique(spat_df.loc['z']).size
     bin_arr = np.fromfile(path, dtype=np.dtype(_HAWC2_BIN_FMT))
     nx = bin_arr.size // (ny * nz)
     if (nx * ny * nz) != bin_arr.size:
@@ -103,6 +128,76 @@ def h2turb_to_df(spat_df, path, prefix=''):
     return turb_df
 
 
+def is_line(points):
+    """see if the points given in points fall along a single line"""
+    # first rotate by first pair to remove issue with vertical lines
+    theta = np.arctan2((points[1, 1] - points[0, 1]), (points[1, 0] - points[0, 0]))
+    R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+    rot_points = points @ R
+    # then do least-squares fit
+    a = np.c_[rot_points[:, 0], np.ones(rot_points.shape[0])]
+    b = rot_points[:, 1]
+    x = np.linalg.lstsq(a, b, rcond=0)[0]
+    if np.isclose(0., np.linalg.norm(a@x-b)):
+        return True
+    else:
+        return False
+
+
+def interpolator(points, values, xi):
+    """Interpolate points in D dimensions.
+
+    This function is based upon scipy's griddata function, but it has been expanded to
+    handle single points and points that fall in a line. It is used in certain profile
+    functions for the wind speed, turbulence standard deviation, and spectrum for
+    interpolating the values calculated from ``con_tc`` to the new requested points.
+    See examples of its usage in the Interpolator example.
+
+    Parameters
+    ----------
+    points : ndarray of floats, shape (n, D)
+        Data point coordinates. Can either be an array of
+        shape (n, D), or a tuple of `D` arrays, each with shape `n`.
+    values : ndarray of float or complex, shape (n,)
+        Data values.
+    xi : 2-D ndarray of float or tuple of 1-D array, shape (M, D)
+        Points at which to interpolate data.
+
+    Returns
+    -------
+    intp_val : ndarray
+        Array of interpolated values, shape M.
+    """
+    ndim = 2  # function assumes we only have 2 interpolating dimensions (y and z)
+    san_vars = [points, xi]  # variables we need to sanitize
+    for i in range(len(san_vars)):
+        if isinstance(san_vars[i], tuple):  # if it's a tuple, array it
+            san_vars[i] = np.atleast_2d(san_vars[i])  # returns an ndim x np array
+        elif isinstance(san_vars[i], (np.ndarray, list)):  # allow a list to be passed in
+            san_vars[i] = np.atleast_2d(san_vars[i]).T  # returns an ndim x np array
+        else:
+            raise ValueError(f'Inputs points and xi can only be a tuple, list or numpy '
+                             'array!')
+        san_vars[i] = san_vars[i].T  # griddata takes np x ndim, so transpose
+    points, xi = san_vars  # reassing points and xi
+    # if one point, just return the values
+    if (points.size == ndim):
+        return sciint.griddata(points, values, xi, method='nearest')
+    # if it's a line, use numpy's 1d interpolation
+    if is_line(points):  # points lie in a line
+        theta = np.arctan2((points[1, 1] - points[0, 1]), (points[1, 0] - points[0, 0]))
+        R = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+        rot_points, rot_xi = points @ R, xi @ R
+        intp_val = np.interp(rot_xi[:, 0], rot_points[:, 0], values)
+    else:  # more than 1 pt, not in a line (so 3+ points)
+        intp_val = sciint.griddata(points, values, xi)  # 1st call griddata w/linear
+        outside = np.isnan(intp_val)  # points outside grid will be nans
+        out_intp = sciint.griddata(points, values, xi[outside],
+                                   method='nearest')  # reeval outside grid with nearest
+        intp_val[outside] = out_intp
+    return intp_val
+
+
 def make_hawc2_input(turb_dir, spat_df, **kwargs):
     """return strings for the hawc2 input files
     """
@@ -113,7 +208,7 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
 
     # string for mann model block
     T, dt = kwargs['T'], kwargs['dt']
-    y, z = set(spat_df.y.values), set(spat_df.z.values)
+    y, z = set(spat_df.loc['y'].values), set(spat_df.loc['z'].values)
     n_x, du = int(np.ceil(T / dt)), dt * kwargs['u_ref']
     n_y, dv = len(y), (max(y) - min(y)) / (len(y) - 1)
     n_z, dw = len(z), (max(z) - min(z)) / (len(z) - 1)
@@ -128,14 +223,15 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
                '  end mann '
 
     # string for output
-    pts_df = spat_df.loc[spat_df.k == 0, ['x', 'y', 'z']]
+    pts_df = spat_df.loc[['x', 'y', 'z'], spat_df.loc['k'] == 0]
     str_output = ''
-    for i_p in pts_df.index:
-        x_p = -pts_df.loc[i_p, 'y']
-        y_p = -pts_df.loc[i_p, 'x']
-        z_p = -pts_df.loc[i_p, 'z']
+    for col in pts_df.columns:
+        x_p = -pts_df.loc['y', col]
+        y_p = -pts_df.loc['x', col]
+        z_p = -pts_df.loc['z', col]
+        i_p = int(col.split('p')[-1])
         str_output += f'  wind free_wind 1 {x_p:.1f} {y_p:.1f} {z_p:.1f}' + \
-            f' # wind_p{i_p//3} ; \n'
+            f' # wind_p{i_p} ; \n'
 
     return str_cntr_pos0, str_mann, str_output
 

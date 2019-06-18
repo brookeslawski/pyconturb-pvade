@@ -34,7 +34,7 @@ def test_binary_thru_hawc2():
               'z_ref': z_hub, 'T': 50, 'dt': 1.}
     coh_model = 'iec'
     spat_df = gen_spat_grid(y, z)
-    
+
     # paths, directories, and file names
     test_dir = os.path.dirname(__file__)  # test directory
     testdata_dir = os.path.join(test_dir, 'data')  # data directory
@@ -45,15 +45,14 @@ def test_binary_thru_hawc2():
     csv_path = os.path.join(tmp_dir, 'turb_df.csv')  # save pandas turb here
     bat_path = os.path.join(tmp_dir, 'run_hawc2.bat')  # bat file to run h2
     hawc2_exe = 'C:/Users/rink/Documents/hawc2/HAWC2_all_12-5/HAWC2MB.exe'  # NOT 12.6!!!
-    
+
     if not os.path.isfile(hawc2_exe):
-        warnings.warn('***HAWC2 executable not found!!! Skipping test.***')
-    #    return
-    
+        warnings.warn('***HAWC2 executable not found!!!***')
+
     # 1. create temp directory
     if not os.path.isdir(tmp_dir):
         os.mkdir(tmp_dir)
-    
+
     # 2. copy htc file there, replacing values
     T, dt, wsp = kwargs['T'], kwargs['dt'], kwargs['u_ref']  # needed in htc
     str_cntr_pos0, str_mann, str_output = make_hawc2_input(tmp_dir,
@@ -63,25 +62,25 @@ def test_binary_thru_hawc2():
             for line in old_fid:
                 new_line = eval('f\'' + line.rstrip() + '\'') + '\n'
                 new_fid.write(new_line)
-    
+
     # 4. generate turbulence files and save to csv
     turb_df = gen_turb(spat_df, coh_model=coh_model, wsp_func=constant_profile,
                        **kwargs)
     df_to_h2turb(turb_df, spat_df, tmp_dir)
     turb_df.reset_index().to_csv(csv_path, index=False)
     del turb_df
-    
+
     # 3. run HAWC2 on htc file
     with open(bat_path, 'w') as bat_fid:
         bat_fid.write(f'cd {tmp_dir}\n' + f'"{hawc2_exe}" {htc_name}')
     out = subprocess.call(f'{bat_path}', shell=True)
     if out:
         raise ValueError('Error running HAWC2!')
-    
+
     # 4. load results
     turb_df = pd.read_csv(csv_path).set_index('index')  # simulated results
     dat_df = dat_to_df(new_htc_path).set_index('time')  # hawc2 results
-    
+
     # 5. compare results
     time_vec = np.arange(4, 10)
     turb_tuples = [('u_p0', 1, 'vyg_p0', 1),  # u is along vg
@@ -91,7 +90,7 @@ def test_binary_thru_hawc2():
         py_turb = np.interp(time_vec, turb_df.index, py_sign * turb_df[py_key])
         h2_turb = np.interp(time_vec, dat_df.index, h2_sign * dat_df[h2_key])
         np.testing.assert_allclose(py_turb, h2_turb, atol=1e-3)
-    
+
     # 6. delete temp directory
     shutil.rmtree(tmp_dir)
 

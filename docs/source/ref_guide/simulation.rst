@@ -4,5 +4,5 @@
 Generating turbulence
 ----------------------
 
-.. automodule:: pyconturb.simulation
+.. automodule:: pyconturb
    :members: gen_turb

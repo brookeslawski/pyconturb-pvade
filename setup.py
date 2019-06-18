@@ -5,7 +5,7 @@ See README.md for how to use this file.
 """
 from setuptools import setup
 
-from pyconturb import __version__
+exec(open('pyconturb/_version.py').read())  # get version and release
 
 
 setup(name='pyconturb',
@@ -20,5 +20,6 @@ setup(name='pyconturb',
                 ],
       install_requires=['numpy',  # numberic arrays
                         'pandas',  # column-labelled arrays
+                        'scipy',  # interpolating profile functions
                         ],
       zip_safe=False)
