@@ -8,6 +8,8 @@ test_pyconturb:  # name the job what we like
   - pip install -r dev_reqs.txt
   - pip install -e .
   - python -m pytest -m "not skipci" --cov-report term-missing:skip-covered --cov=pyconturb --cov-config .coveragerc
+  except:  # don't run on these branches
+  - update_docs
   tags:  # only runners with this tag can do the job [3]
   - python
 
