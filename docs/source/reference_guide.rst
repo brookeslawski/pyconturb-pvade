@@ -3,7 +3,7 @@
 Reference guide
 ===========================
 
-Here is a summary of the most useful functions.
+Here is some more information on PyConTurb's most useful functionalities.
 
 
 Contents:
@@ -14,3 +14,5 @@ Contents:
         ref_guide/profiles
         ref_guide/sig_models
         ref_guide/spectral_models
+        ref_guide/time_constraint
+        ref_guide/interpolator

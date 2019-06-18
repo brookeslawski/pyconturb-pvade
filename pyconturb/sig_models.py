@@ -6,7 +6,7 @@ to model the spatial variation of the turbulence standard deviation.
 """
 import numpy as np
 
-from pyconturb._utils import _DEF_KWARGS
+from pyconturb._utils import _DEF_KWARGS, interpolator
 
 
 def get_sig_values(spat_df, sig_func, **kwargs):
@@ -38,7 +38,48 @@ def get_sig_values(spat_df, sig_func, **kwargs):
         [m/s] Turbulence standard deviation(s) for the given spatial locations(s)
         /component(s). Dimension is ``(n_sp,)``.
     """
-    return sig_func(spat_df.k, spat_df.y, spat_df.z, **kwargs)
+    return sig_func(spat_df.loc['k'], spat_df.loc['y'], spat_df.loc['z'], **kwargs)
+
+
+def data_sig(k, y, z, con_tc=None, **kwargs):
+    """Turbulence standard deviation interpolated from a TimeConstraint object.
+
+    See the Examples and/or Reference Guide for details on the interpolator logic or for
+    how to construct a TimeConstraint object.
+
+    Parameters
+    ----------
+    k : array-like
+        [-] Integer indicator of the turbulence component. 0=u, 1=v, 2=w.
+    y : array-like
+        [m] Location of point(s) in the lateral direction. Can be int/float,
+        np.array or pandas.Series.
+    z : array-like
+        [m] Location of point(s) in the vertical direction. Can be int/float,
+        np.array or pandas.Series.
+    con_tc : pyconturb.TimeConstraint
+        [-] Constraint object. Must have correct format; see documentation on
+        PyConTurb's TimeConstraint object for more details.
+    **kwargs
+        Unused (optional) keyword arguments.
+
+    Returns
+    -------
+    sig_values : np.array
+        [m/s] Turbulence standard deviation(s) at the specified location(s). Dimension
+        is ``(n_sp,)``.
+    """
+    if con_tc is None:
+        raise ValueError('No data provided!')
+    k, y, z = np.array(k, dtype=int), np.array(y), np.array(z)
+    out_array = np.empty_like(y, dtype=float)
+    for kval in np.unique(k):  # loop over passed-in components
+        mask = (k == kval)
+        ypts = con_tc.filter(regex=f'{"uvw"[kval]}_').loc['y'].values.astype(float)
+        zpts = con_tc.filter(regex=f'{"uvw"[kval]}_').loc['z'].values.astype(float)
+        vals = con_tc.get_time().filter(regex=f'{"uvw"[kval]}_').std().values.astype(float)
+        out_array[mask] = interpolator((ypts, zpts), vals, (y[mask], z[mask]))
+    return out_array
 
 
 def iec_sig(k, y, z, turb_class=_DEF_KWARGS['turb_class'], **kwargs):
@@ -62,7 +103,8 @@ def iec_sig(k, y, z, turb_class=_DEF_KWARGS['turb_class'], **kwargs):
     Returns
     -------
     sig_values : np.array
-        [m/s] Turbulence standard deviation(s) at the specified location(s).
+        [m/s] Turbulence standard deviation(s) at the specified location(s). Dimension
+        is ``(n_sp,)``.
     """
     kwargs = {**{'turb_class': turb_class}, **kwargs}  # add dflts if not given
     assert kwargs['turb_class'].lower() in 'abc', 'Invalid or no turbulence class!'

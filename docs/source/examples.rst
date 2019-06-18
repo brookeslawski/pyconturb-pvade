@@ -22,6 +22,8 @@ The notebooks are located in ``docs/source/notebooks`` in the repository.
     :caption: Examples
     :maxdepth: 2
 
-    notebooks/demo_unconstr_time_series
-    notebooks/demo_spat_vary
-    notebooks/demo_constr_time_series
+    notebooks/1_unconstr_time_series
+    notebooks/2_custom_profiles
+    notebooks/3_constr_time_series
+    notebooks/4_pyconturb_interpolator
+    notebooks/5_data_profile_interp

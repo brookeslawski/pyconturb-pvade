@@ -16,8 +16,8 @@ import os
 import sys
 sys.path.insert(0, os.path.join(os.path.abspath('.'), '..', '..'))  # repo
 
-from pyconturb import __version__
-from pyconturb import __release__
+from pyconturb._version import __version__
+from pyconturb._version import __release__
 
 
 # -- Project information -----------------------------------------------------

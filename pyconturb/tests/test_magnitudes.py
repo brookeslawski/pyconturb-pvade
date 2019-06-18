@@ -14,14 +14,13 @@ import pytest
 from pyconturb.magnitudes import spc_to_mag, get_magnitudes
 from pyconturb.sig_models import iec_sig
 from pyconturb.spectral_models import kaimal_spectrum
-from pyconturb._utils import _spat_colnames, get_freq
+from pyconturb._utils import _spat_rownames, get_freq
 
 
 def test_get_mags_iec():
     """"""
     # given
-    spat_df = pd.DataFrame([[0, 0, 0, 0, 90],
-                            [1, 0, 0, 0, 90]], columns=_spat_colnames)
+    spat_df = pd.DataFrame([[0, 1], [0, 0], [0, 0], [90, 90]], index=_spat_rownames)
     kwargs = {'T': 2, 'dt': 1, 'turb_class': 'a', 'z_ref': 90, 'u_ref': 10, 'alpha': 0.2}
     sig_func, spec_func = iec_sig, kaimal_spectrum
     mags_theo = [[0, 0], [2.096, 1.6768]]
@@ -35,8 +34,7 @@ def test_get_mags_iec():
 def test_spc_to_mag():
     """verify we get mags with correct std out from function"""
     # given
-    spat_df = pd.DataFrame([[0, 0, 0, 0, 90],
-                            [1, 0, 0, 0, 90]], columns=_spat_colnames)
+    spat_df = pd.DataFrame([[0, 1], [0, 0], [0, 0], [90, 90]], index=_spat_rownames)
     spc_arr = np.ones((10, 2))
     kwargs = {'T': 10, 'dt': 1}
     t, f = get_freq(**kwargs)
