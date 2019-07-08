@@ -21,7 +21,7 @@ from pyconturb._utils import combine_spat_con, _spat_rownames, _DEF_KWARGS, clea
 
 def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
              wsp_func=None, sig_func=None, spec_func=None,
-             seed=None, mem_gb=0.10, verbose=False, **kwargs):
+             interp_data='none', seed=None, mem_gb=0.10, verbose=False, **kwargs):
     """Generate a turbulence box (constrained or unconstrained).
 
     Parameters
@@ -48,6 +48,12 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     spec_func : function, optional
         Function to specify spatial variation of turbulence power spectrum. See
         details in `Turbulence spectra` section.
+    interp_data : str, optional
+        Interpolate mean wind speed, standard deviation, and/or power spectra profile
+        functions from provided constraint data. Possible options are ``'none'`` (use
+        provided/default profile functions), ``'all'`` (interpolate all profile,
+        functions), or a list containing and combination of ``'wsp'``, ``'sig'`` and
+        ``'spec'`` (interpolate the wind speed, standard deviation and/or power spectra).
     seed : int, optional
         Optional random seed for turbulence generation. Use the same seed and
         settings to regenerate the same turbulence box.
@@ -69,6 +75,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     """
     if verbose:
         print('Beginning turbulence simulation...')
+    # check things regarding passed in data
     if ('con_data' in kwargs) and (con_tc is None):  # don't use con_data please
         warnings.warn('The con_data option is deprecated and will be removed in future' +
                       ' versions. Please see the documentation for how to specify' +
@@ -78,17 +85,24 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     elif ('con_data' in kwargs) and (con_tc is not None):  # both passed in
         warnings.warn('Both con_data (deprecated) and con_tc passed in! Using con_tc.',
                       DeprecationWarning, stack_level=2)
+    if (interp_data != 'none') and (con_tc is None):  # asked to interp, but no data in
+        raise ValueError('If "interp_data" is not "none", constraint data must be '
+                         + 'passed in!')
 
-    # add T, dt, con_tc to kwargs, assign profile functions (default or data if con)
+    # add T, dt, con_tc to kwargs
     kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'dt': dt, 'con_tc': con_tc}
-    prof_funcs = [[wsp_func, power_profile, data_profile], [sig_func, iec_sig, data_sig],
-                  [spec_func, kaimal_spectrum, data_spectrum]]
-    for i_func in range(len(prof_funcs)):
-        if (prof_funcs[i_func][0] is None) and (con_tc is None):  # no constraint
-            prof_funcs[i_func][0] = prof_funcs[i_func][1]
-        elif (prof_funcs[i_func][0] is None) and (con_tc is not None):  # constraint
-            prof_funcs[i_func][0] = prof_funcs[i_func][2]
-    wsp_func, sig_func, spec_func = [prof_funcs[i][0] for i in range(len(prof_funcs))]
+    # assign profile functions
+    prof_funcs = [power_profile, iec_sig,  kaimal_spectrum]  # default
+    if interp_data == 'none': interp_data = []  # no profs interpolated
+    elif interp_data == 'all': interp_data = ['wsp', 'sig', 'spec']  # all profs interp'd
+    elif not isinstance(interp_data, list):  # bad input
+        raise ValueError('"interp_data" must be either "all", "none", or a list!')
+    for prof in interp_data:
+        if prof == 'wsp': prof_funcs[0] = data_profile
+        elif prof == 'sig': prof_funcs[1] = data_sig
+        elif prof == 'spec': prof_funcs[2] = data_spectrum
+        else: raise ValueError(f'Unknown profile type "{prof}"!')  # bad input
+    wsp_func, sig_func, spec_func = prof_funcs
 
     # assign/create constraining data
     n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
