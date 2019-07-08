@@ -113,12 +113,12 @@ def test_verify_iec_sim_coherence():
     n_real = 1000  # number of realizations in ensemble
     coh_thresh = 0.12  # coherence threshold
     # get theoretical coherence
-    idcs = np.triu_indices(spat_df.shape[0], k=1)
+    idcs = np.triu_indices(spat_df.shape[1], k=1)
     coh_theo = get_coh_mat(1 / kwargs['T'], spat_df, coh_model=coh_model,
                            **kwargs)[idcs].flatten()
     # when
     ii_jj = [(i, j) for (i, j) in
-             itertools.combinations(spat_df.index, 2)]  # pairwise indices
+             itertools.combinations(np.arange(spat_df.shape[1]), 2)]  # pairwise indices
     ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]
     turb_ens = np.empty((int(np.ceil(kwargs['T']/kwargs['dt'])),
                          3 * len(y) * len(z), n_real))
@@ -131,7 +131,6 @@ def test_verify_iec_sim_coherence():
                    np.sqrt(x_jj * np.conj(x_jj))),
                   axis=-1)
     max_coh_diff = np.abs(coh - coh_theo).max()
-
     # then
     assert max_coh_diff < coh_thresh
 
@@ -143,4 +142,3 @@ if __name__ == '__main__':
     test_iec_missingkwargs()
     test_iec_value()
     test_3d_value()
-    
