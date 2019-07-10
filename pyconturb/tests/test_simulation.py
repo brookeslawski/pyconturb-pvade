@@ -9,6 +9,7 @@ rink@dtu.dk
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from pyconturb import gen_turb, TimeConstraint
 from pyconturb.sig_models import iec_sig
@@ -59,6 +60,60 @@ def test_gen_turb_con():
     np.testing.assert_allclose(con_turb_df.u_p0, sim_turb_df.u_p0, atol=0.01)
 
 
+def test_gen_turb_warnings():
+    """verify the warnings are thrown"""
+    # given
+    con_spat_df = pd.DataFrame([[0, 0, 0, 0, 75]],
+                               columns=['k', 'p_id', 'x', 'y', 'z'])
+    con_turb_df = pd.DataFrame([[9], [11]], index=[0, 1], columns=['u_p0'])
+    con_data = {'con_spat_df': con_spat_df, 'con_turb_df': con_turb_df}
+    y, z = 0, [70, 80]
+    spat_df = gen_spat_grid(y, z)
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 75, 'T': 2,
+              'dt': 1, 'con_data': con_data}
+    # when and then
+    with pytest.warns(DeprecationWarning):
+        gen_turb(spat_df, **kwargs)
+
+
+def test_gen_turb_bad_interp():
+    """verify the errors are thrown for bad interp_data options"""
+    # given
+    y, z = 0, [70, 80]
+    spat_df = gen_spat_grid(y, z)
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 75, 'T': 2,
+              'dt': 1}
+    con_spat_df = pd.DataFrame([[0, 0, 0, 0, 75]],
+                               columns=['k', 'p_id', 'x', 'y', 'z'])
+    con_turb_df = pd.DataFrame([[0], [1]], index=[9, 11], columns=['u_p0'])
+    con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df, con_turb_df=con_turb_df)
+    # when and then
+    with pytest.raises(ValueError):  # no con_tc given
+        gen_turb(spat_df, interp_data='all', **kwargs)
+    with pytest.raises(ValueError):  # bad string
+        gen_turb(spat_df, interp_data='dog', con_tc=con_tc, **kwargs)
+    with pytest.raises(ValueError):  # bad string in list
+        gen_turb(spat_df, interp_data=['dog'], con_tc=con_tc, **kwargs)
+
+
+def test_gen_turb_bad_con_tc():
+    """verify the errors are thrown when con_tc dt doesn't match sim dt"""
+    y, z = 0, [70, 80]
+    spat_df = gen_spat_grid(y, z)
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 75, 'T': 1,
+              'dt': 0.5}
+    con_spat_df = pd.DataFrame([[0, 0, 0, 0, 75]],
+                               columns=['k', 'p_id', 'x', 'y', 'z'])
+    con_turb_df = pd.DataFrame([[9], [11]], index=[0, 5], columns=['u_p0'])
+    con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df, con_turb_df=con_turb_df)
+    # when and then
+    with pytest.raises(ValueError):  # no con_tc given
+        gen_turb(spat_df, con_tc=con_tc, **kwargs)
+
+
 if __name__ == '__main__':
     test_iec_turb_mn_std_dev()
     test_gen_turb_con()
+    test_gen_turb_warnings()
+    test_gen_turb_bad_interp()
+    test_gen_turb_bad_con_tc()
