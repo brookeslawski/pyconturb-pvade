@@ -186,6 +186,16 @@ def test_interpolator():
         np.testing.assert_almost_equal(out_tup, values[i_out])
 
 
+def test_interpolator_badinput():
+    """verify interpolator throws error with bad input
+    """
+    # given
+    points, values, xi = 'abc'
+    # when and then
+    with pytest.raises(ValueError):
+        utils.interpolator(points, values, xi)
+
+
 if __name__ == '__main__':
     test_clean_turb()
     test_combine_spat_con_empty()
@@ -197,3 +207,4 @@ if __name__ == '__main__':
     test_make_hawc2_input()
     test_rotate_time_series()
     test_interpolator()
+    test_interpolator_badinput()

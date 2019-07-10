@@ -54,6 +54,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         provided/default profile functions), ``'all'`` (interpolate all profile,
         functions), or a list containing and combination of ``'wsp'``, ``'sig'`` and
         ``'spec'`` (interpolate the wind speed, standard deviation and/or power spectra).
+        Default is IEC 61400-1 profiles (i.e., no interpolation).
     seed : int, optional
         Optional random seed for turbulence generation. Use the same seed and
         settings to regenerate the same turbulence box.
@@ -75,24 +76,21 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     """
     if verbose:
         print('Beginning turbulence simulation...')
-    # check things regarding passed in data
+    # if con_data passed in, throw deprecation warning
     if ('con_data' in kwargs) and (con_tc is None):  # don't use con_data please
         warnings.warn('The con_data option is deprecated and will be removed in future' +
                       ' versions. Please see the documentation for how to specify' +
                       ' time constraints.',
-                      DeprecationWarning, stack_level=2)
+                      DeprecationWarning, stacklevel=2)
         con_tc = TimeConstraint().from_con_data(kwargs['con_data'])
-    elif ('con_data' in kwargs) and (con_tc is not None):  # both passed in
-        warnings.warn('Both con_data (deprecated) and con_tc passed in! Using con_tc.',
-                      DeprecationWarning, stack_level=2)
-    if (interp_data != 'none') and (con_tc is None):  # asked to interp, but no data in
-        raise ValueError('If "interp_data" is not "none", constraint data must be '
-                         + 'passed in!')
+    # if asked to interpret but no data, throw warning
+    if (((interp_data == 'all') or isinstance(interp_data, list)) and (con_tc is None)):
+        raise ValueError('If "interp_data" is not "none", constraints must be given!')
 
     # add T, dt, con_tc to kwargs
     kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'dt': dt, 'con_tc': con_tc}
     # assign profile functions
-    prof_funcs = [power_profile, iec_sig,  kaimal_spectrum]  # default
+    prof_funcs = [power_profile, iec_sig,  kaimal_spectrum]  # default functions
     if interp_data == 'none': interp_data = []  # no profs interpolated
     elif interp_data == 'all': interp_data = ['wsp', 'sig', 'spec']  # all profs interp'd
     elif not isinstance(interp_data, list):  # bad input
@@ -106,14 +104,14 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
 
     # assign/create constraining data
     n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
+    t = np.arange(n_t) * kwargs['dt']  # time array
     if con_tc is None:  # create empty constraint data if not passed in
         constrained, n_d = False, 0  # no. of constraints
         con_tc = TimeConstraint(index=_spat_rownames)
     else:
         constrained = True
         n_d = con_tc.shape[1]  # no. of constraints
-        if con_tc.get_time().shape[0] != n_t:
-            print(n_t, con_tc.get_time().shape[0])
+        if not np.array_equal(con_tc.get_time().index, t):
             raise ValueError('TimeConstraint time does not match requested T, dt!')
 
     # combine data and sim spat_dfs
@@ -127,7 +125,6 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     # intermediate variables
     n_f = n_t // 2 + 1  # no. freqs
     freq = np.arange(n_f) / kwargs['T']  # frequency array
-    t = np.arange(n_t) * kwargs['dt']  # time array
 
     # get magnitudes of points to simulate. (nf, nsim). con_tc in kwargs.
     sim_mags = get_magnitudes(all_spat_df.iloc[:, n_d:], spec_func, sig_func, **kwargs)

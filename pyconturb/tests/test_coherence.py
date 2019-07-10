@@ -13,7 +13,7 @@ import pandas as pd
 import pytest
 
 from pyconturb.simulation import gen_turb
-from pyconturb.coherence import get_coh_mat, get_iec_coh_mat, get_3d_coh_mat
+from pyconturb.coherence import get_coh_mat
 from pyconturb._utils import gen_spat_grid, _spat_rownames
 
 
@@ -48,11 +48,11 @@ def test_iec_badedition():
     """
     # given
     spat_df = pd.DataFrame([[0], [0], [0], [0]], index=_spat_rownames, columns=['u_p0'])
-    freq = 1
+    freq, coh_model = 1, 'iec'
     kwargs = {'ed': 4, 'u_ref': 12, 'l_c': 340.2}
     # when & then
     with pytest.raises(ValueError):
-        get_iec_coh_mat(spat_df, freq, **kwargs)
+        get_coh_mat(spat_df, freq, **kwargs)
 
 
 def test_iec_missingkwargs():
@@ -60,10 +60,21 @@ def test_iec_missingkwargs():
     """
     # given
     spat_df = pd.DataFrame([[0, 0], [0, 0], [0, 0], [0, 1]], index=_spat_rownames, columns=['u_p0', 'u_p1'])
-    freq, kwargs = 1, {'ed': 3, 'u_ref': 12}
+    freq, kwargs, coh_model = 1, {'ed': 3, 'u_ref': 12}, 'iec'
     # when & then
     with pytest.raises(ValueError):
-        get_iec_coh_mat(freq, spat_df, **kwargs)
+        get_coh_mat(freq, spat_df, coh_model=coh_model, **kwargs)
+
+
+def test_3d_missingkwargs():
+    """IEC coherence should raise an error if missing parameter(s)
+    """
+    # given
+    spat_df = pd.DataFrame([[0, 0], [0, 0], [0, 0], [0, 1]], index=_spat_rownames, columns=['u_p0', 'u_p1'])
+    freq, kwargs, coh_model = 1, {'ed': 3, 'u_ref': 12}, '3d'
+    # when & then
+    with pytest.raises(ValueError):
+        get_coh_mat(freq, spat_df, coh_model=coh_model, **kwargs)
 
 
 def test_iec_value():
@@ -72,13 +83,13 @@ def test_iec_value():
     # 1: same comp, 2: diff comp
     for comp2, coh2 in [(0, 0.0479231144), (1, 0)]:
         # given
-        spat_df = pd.DataFrame([[0, comp2], [0, 0], [0, 0], [0, 1]], index=_spat_rownames,
-                               columns=['u_p0', 'x_p1'])
+        spat_df = pd.DataFrame([[0, comp2], [0, 0], [0, 0], [0, 1]],
+                               index=_spat_rownames, columns=['u_p0', 'x_p1'])
         freq = 0.5
-        kwargs = {'ed': 3, 'u_ref': 2, 'l_c': 3}
+        kwargs = {'ed': 3, 'u_ref': 2, 'l_c': 3, 'coh_model': 'iec'}
         coh_theory = np.array([[1., coh2], [coh2, 1.]])
         # when
-        coh = get_iec_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
+        coh = get_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
         # then
         np.testing.assert_allclose(coh, coh_theory)
 
@@ -88,13 +99,13 @@ def test_3d_value():
     # 1: same comp, 2: diff comp
     for comp, coh2 in [(0, 0.0479231144), (1, 0.0358754554), (2, 0.0013457414)]:
         # given
-        spat_df = pd.DataFrame([[comp, comp], [0, 0], [0, 0], [0, 1]], index=_spat_rownames,
-                               columns=['x_p0', 'y_p1'])
+        spat_df = pd.DataFrame([[comp, comp], [0, 0], [0, 0], [0, 1]],
+                               index=_spat_rownames, columns=['x_p0', 'y_p1'])
         freq = 0.5
-        kwargs = {'u_ref': 2, 'l_c': 3}
+        kwargs = {'u_ref': 2, 'l_c': 3, 'coh_model': '3d'}
         coh_theory = np.array([[1., coh2], [coh2, 1.]])
         # when
-        coh = get_3d_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
+        coh = get_coh_mat(freq, spat_df, **kwargs)[:, :, 0]
         # then
         np.testing.assert_allclose(coh, coh_theory, atol=1e-6)
 
@@ -140,5 +151,6 @@ if __name__ == '__main__':
     test_main_badcohmodel()
     test_iec_badedition()
     test_iec_missingkwargs()
+    test_3d_missingkwargs()
     test_iec_value()
     test_3d_value()
