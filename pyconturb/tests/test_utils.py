@@ -17,9 +17,9 @@ _spat_rownames = utils._spat_rownames
 def test_clean_turb():
     """verify correct columns are removed and others are renamed (also handle floats)"""
     # given
-    spat_df = pd.DataFrame([[0, 1], [0, 0], [0, 0], [70, 70]], index=['k', 'x', 'y', 'z'],
-                           columns=['u_p0', 'v_p0'], dtype=float)
-    all_spat_df = pd.DataFrame([[0, 1, 0], [0, 0, 0], [0, 0, 0], [70, 70, 80]],
+    spat_df = pd.DataFrame([[0, 1], [0, 0], [0, 0], [70, 70. + 1e-13]],
+                           index=['k', 'x', 'y', 'z'], columns=['u_p0', 'v_p0'], dtype=float)
+    all_spat_df = pd.DataFrame([[0, 1, 0], [0, 0, 0], [0, 0, 0], [70. + 1e-13, 70, 80]],
                                index=['k', 'x', 'y', 'z'],
                                columns=['u_p0', 'v_p0_con', 'u_p0_con'], dtype=float)
     turb_df = pd.DataFrame([[0, 1, 2], [2, 3, 4], [3, 4, 5], [4, 5, 6]],
@@ -65,18 +65,18 @@ def test_combine_spat_con_nonunique():
 
 
 def test_combine_spat_con_tcinspat():
-    """some columns in TimeConstraint are in spat_df"""
+    """some columns in TimeConstraint are in spat_df and float precision"""
     # given
-    spat_df = pd.DataFrame([[0, 0], [0, 0], [0, 0], [50, 60]],
+    spat_df = pd.DataFrame([[0, 0], [0, 0], [0, 0], [50, 60.]],
                            index=_spat_rownames, columns=['u_p0', 'u_p1'])
-    con_tc = TimeConstraint([[0, 0], [0, 0], [0, 0], [60, 70]],
+    con_tc = TimeConstraint([[0, 0], [0, 0], [0, 0], [60 + 1e-13, 70]],
                             index=_spat_rownames, columns=['u_p0', 'u_p1'])
     theo_df = pd.DataFrame([[0, 0, 0], [0, 0, 0], [0, 0, 0], [60, 70, 50]],
                            index=_spat_rownames, columns=['u_p0_con', 'u_p1_con', 'u_p0'])
     # when
     comb_df = utils.combine_spat_con(spat_df, con_tc)
     # then
-    pd.testing.assert_frame_equal(theo_df, comb_df)
+    pd.testing.assert_frame_equal(theo_df, comb_df, check_dtype=False)
 
 
 def test_pctdf_to_h2turb():

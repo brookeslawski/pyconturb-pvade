@@ -60,7 +60,8 @@ def data_spectrum(f, k, y, z, con_tc=None, **kwargs):
     f : array-like
         [Hz] Frequency(s) for which PSD is to be calculated. Size is ``n_f``.
     k : array-like
-        [-] Integer indicator of the turbulence component. 0=u, 1=v, 2=w.
+        [-] Integer indicator of the turbulence component. 0=u, 1=v, 2=w. Size is
+        ``n_sp``.
     y : array-like
         [m] Location of point(s) in the lateral direction. Can be int/float,
         np.array or pandas.Series.
@@ -81,22 +82,26 @@ def data_spectrum(f, k, y, z, con_tc=None, **kwargs):
     """
     if con_tc is None:
         raise ValueError('No data provided!')
+    # get time array and isolate/sanitize useful variables
     time_df = con_tc.get_time()
-    df = 1 / (time_df.index[-1] + time_df.index[1])
+    df, nt = 1 / (time_df.index[-1] + time_df.index[1]), time_df.shape[0]
     f_reqs, k = np.array(f, ndmin=1), np.array(k, ndmin=1, dtype=int)
     y, z = np.array(y, ndmin=1, dtype=float), np.array(z, ndmin=1, dtype=float)
+    # initialize spectral values
     spec_values = np.empty((f_reqs.size, y.size), dtype=float)
-    for kval in np.unique(k):  # loop over passed-in components
-        mask = (k == kval)
-        ypts = con_tc.filter(regex=f'{"uvw"[kval]}_').loc['y'].values.astype(float)
-        zpts = con_tc.filter(regex=f'{"uvw"[kval]}_').loc['z'].values.astype(float)
-        time_df = con_tc.filter(regex=f'{"uvw"[kval]}_').iloc[4:]
-        spc_data = 2 * np.abs(np.fft.rfft(time_df, axis=0))**2 / df
+    for kval in np.unique(k):  # loop over the unique requested k values
+        spec_mask = (k == kval)  # cols in spec_values corr. to this kval
+        con_mask = (con_tc.loc['k'] == kval).values
+        ypts = con_tc.iloc[2, con_mask].values.astype(float)
+        zpts = con_tc.iloc[3, con_mask].values.astype(float)
+        k_time = con_tc.iloc[4:, con_mask]
+        spc_data = 2 * np.abs(np.fft.rfft(k_time, axis=0) / nt)**2 / df
         freq = np.arange(spc_data.shape[0]) * df
         for i_f, f_req in enumerate(f_reqs):
-            f_idx = np.argmax(f_req == freq)  # idx of req'd freq in con_tc freq arr
+            f_idx = np.argmax(np.isclose(f_req, freq))  # idx of req'd f in con_tc arr
             vals = spc_data[f_idx, :]  # pull out that frequency/component
-            spec_values[i_f, mask] = interpolator((ypts, zpts), vals, (y[mask], z[mask]))
+            spec_values[i_f, spec_mask] = interpolator((ypts, zpts), vals,
+                                                       (y[spec_mask], z[spec_mask]))
     return spec_values
 
 

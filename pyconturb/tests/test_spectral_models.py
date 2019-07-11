@@ -60,22 +60,38 @@ def test_kaimal_spectrum_value():
 
 
 def test_data_spectrum():
-    """verify the data interpolator implement in data_spectrum works + dtype"""
+    """verify 1) data interpolator implement in data_spectrum works, 2) dtype"""
     # given
-    f = [0, 0.5]
+    f, T, dt = [0, 0.5], 2, 1
     k, y, z = np.repeat(range(3), 3), np.zeros(9, dtype=int), np.tile([40, 70, 100], 3)
     con_tc = TimeConstraint([[0, 0, 1, 1, 2, 2], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
                              [50, 90, 50, 90, 50, 90],
                              [0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6]],
-                            index=['k', 'x', 'y', 'z', 0.0, 1.0],
-                            columns=['u_p0', 'u_p1', 'v_p0', 'v_p1', 'w_p0', 'w_p1'])
-    spc_theo = np.tile(np.interp([0, 0.5, 1, 2, 2.5, 3, 4, 4.5, 5],
-                                 np.arange(6), [4, 16, 36, 64, 100, 144]),
-                       (2, 1))
+                            index=['k', 'x', 'y', 'z', 0.0, 1.0])
+    spec_cols = 2 * np.abs(np.fft.rfft(con_tc.get_time(), axis=0)/(T/dt))**2 * T
+    spec_theo = np.tile(np.interp([0, 0.5, 1, 2, 2.5, 3, 4, 4.5, 5],
+                                  np.arange(6), spec_cols[0]), (2, 1))
     # when
-    spc_arr = data_spectrum(f, k, y, z, con_tc=con_tc)
+    spec_arr = data_spectrum(f, k, y, z, con_tc=con_tc)
     # then
-    np.testing.assert_array_equal(spc_theo, spc_arr)
+    np.testing.assert_array_equal(spec_theo, spec_arr)
+
+
+def test_data_spectrum_nolabels():
+    """test 1)can interpolate with no/incorrect column labels 2) float comparisons"""
+    # given
+    dt, z, T = 1, 65, 4
+    con_tc = TimeConstraint([[0, 0], [0, 0], [0, 0], [60, 70],
+                             [9, 17], [11, 20], [10, 18], [9, 16]],
+                            index=['k', 'x', 'y', 'z', 0, dt, 2*dt, 3*dt],
+                            columns=['dog', 'cat'])
+    mags_theo = np.abs(np.fft.rfft(con_tc.get_time(), axis=0)/(T/dt))
+    spec_theo = np.mean(2*mags_theo**2*T, axis=1).reshape(-1, 1)
+    f = np.arange(mags_theo.shape[0]) / T + 1e-12
+    # when
+    spec = data_spectrum(f, 0, 0, z, con_tc=con_tc)
+    # then
+    np.testing.assert_array_almost_equal(spec, spec_theo)
 
 
 if __name__ == '__main__':
@@ -83,3 +99,4 @@ if __name__ == '__main__':
     test_get_spec_values_kaimal()
     test_kaimal_spectrum_value()
     test_data_spectrum()
+    test_data_spectrum_nolabels()
