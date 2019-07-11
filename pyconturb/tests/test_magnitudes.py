@@ -6,10 +6,8 @@ Author
 Jenni Rinker
 rink@dtu.dk
 """
-
 import numpy as np
 import pandas as pd
-import pytest
 
 from pyconturb.magnitudes import spc_to_mag, get_magnitudes
 from pyconturb.sig_models import iec_sig
@@ -18,7 +16,7 @@ from pyconturb._utils import _spat_rownames, get_freq
 
 
 def test_get_mags_iec():
-    """"""
+    """verify iec magnitudes"""
     # given
     spat_df = pd.DataFrame([[0, 1], [0, 0], [0, 0], [90, 90]], index=_spat_rownames)
     kwargs = {'T': 2, 'dt': 1, 'turb_class': 'a', 'z_ref': 90, 'u_ref': 10, 'alpha': 0.2}

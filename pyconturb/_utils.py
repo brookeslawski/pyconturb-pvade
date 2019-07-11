@@ -15,9 +15,42 @@ _HAWC2_BIN_FMT = '<f'  # HAWC2 binary turbulence datatype
 _HAWC2_TURB_COOR = {'u': -1, 'v': -1, 'w': 1}  # hawc2 turb xyz to uvw
 
 
-def combine_spat_con(spat_df, con_tc, drop_duplicates=True):
+def clean_turb(spat_df, all_spat_df, turb_df, decimals=10):
+    """Remove the columns we don't return and rename the rest correctly. Will check only
+    to decimals places when removing duplicates (data unchanged)."""
+    # drop the columns that aren't in spat_df (use isclose for float comparisons)
+    drop_cols = all_spat_df.apply(lambda col:
+                                  not np.all(np.isclose(col.values, spat_df.values.T),
+                                             axis=1).sum()).values
+    turb_df.drop(turb_df.columns[drop_cols], axis=1, inplace=True)
+    all_spat_df.drop(all_spat_df.columns[drop_cols], axis=1, inplace=True)
+    # get unique locs in spat_df (need rounding logic here for dropping float duplicates)
+    spat_xyz = spat_df.loc[['x', 'y', 'z']]
+    spat_xyz = spat_xyz.T.loc[~spat_xyz.T.apply(np.round,
+                                                args=[decimals]).duplicated()].T
+    # for each column in all_spat_df, find the correct name using spat_df and rename it
+    for colname in all_spat_df:
+        col = all_spat_df[colname]
+        k, x, y, z = col.values
+        pid = np.all(np.isclose(np.array([x, y, z]), spat_xyz.values.T),
+                     axis=1).argmax()  # use np.isclose for float comparisons
+        new_name = f'{"uvw"[int(k)]}_p{pid}'
+        turb_df.rename(columns={colname: new_name}, inplace=True)
+    # order according to spat_df
+    col_names = []
+    for colname in spat_df:
+        col = spat_df[colname]
+        k, x, y, z = col.values
+        pid = np.all(np.isclose(np.array([x, y, z]), spat_xyz.values.T),
+                     axis=1).argmax()  # use np.isclose for float comparisons
+        col_names.append(f'{"uvw"[int(k)]}_p{pid}')
+    return turb_df[col_names]
+
+
+def combine_spat_con(spat_df, con_tc, drop_duplicates=True, decimals=10):
     """Add constraining points in TimeConstraint to spat_df. NOTE constraints must come
-    first or gen_turb will break. ALSO keep the data rows! Need them for corr.
+    first or gen_turb will break. ALSO keep the data rows! Need them for corr. ALSO this
+    function catches duplicates by first rounding to decimals places.
     """
     con_spat_df = con_tc.get_spat().add_suffix('_con')
     if (set(spat_df.columns).intersection(set(con_spat_df.columns)) and (con_tc.size)):
@@ -26,7 +59,9 @@ def combine_spat_con(spat_df, con_tc, drop_duplicates=True):
                          'appended.')
     comb_df = pd.concat((con_spat_df, spat_df), axis=1)
     if drop_duplicates:
-        comb_df = comb_df.T.drop_duplicates().T
+        # need to round before dropping to prevent machine-precision floats being "uniq"
+        comb_df = comb_df.T.loc[~comb_df.T.apply(np.round,
+                                                 args=[decimals]).duplicated()].T
     return comb_df
 
 
@@ -68,31 +103,6 @@ def gen_spat_grid(y, z, comps=[0, 1, 2]):
                      np.repeat(np.c_[xs.T.ravel(), ys.T.ravel(), zs.T.ravel()],
                                ks.size, axis=0)].T  # create array using numpy
     return pd.DataFrame(spat_arr, index=_spat_rownames, columns=col_names)
-
-
-def clean_turb(spat_df, all_spat_df, turb_df):
-    """Remove the columns we don't return and rename the rest correctly"""
-    # drop the columns that aren't in spat_df
-    drop_cols = all_spat_df.apply(lambda col: not np.all(col.values == spat_df.values.T,
-                                                         axis=1).sum()).values
-    turb_df.drop(turb_df.columns[drop_cols], axis=1, inplace=True)
-    all_spat_df.drop(all_spat_df.columns[drop_cols], axis=1, inplace=True)
-    # for each column in all_spat_df, find the correct name using spat_df and rename it
-    spat_xyz = spat_df.loc[['x', 'y', 'z']].T.drop_duplicates().T
-    for colname in all_spat_df:
-        col = all_spat_df[colname]
-        k, x, y, z = col.values
-        pid = np.all(np.array([x, y, z]) == spat_xyz.values.T, axis=1).argmax()
-        new_name = f'{"uvw"[int(k)]}_p{pid}'
-        turb_df.rename(columns={colname: new_name}, inplace=True)
-    # order according to spat_df
-    col_names = []
-    for colname in spat_df:
-        col = spat_df[colname]
-        k, x, y, z = col.values
-        pid = np.all(np.array([x, y, z]) == spat_xyz.values.T, axis=1).argmax()
-        col_names.append(f'{"uvw"[int(k)]}_p{pid}')
-    return turb_df[col_names]
 
 
 def get_freq(**kwargs):

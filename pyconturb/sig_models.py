@@ -45,7 +45,8 @@ def data_sig(k, y, z, con_tc=None, **kwargs):
     """Turbulence standard deviation interpolated from a TimeConstraint object.
 
     See the Examples and/or Reference Guide for details on the interpolator logic or for
-    how to construct a TimeConstraint object.
+    how to construct a TimeConstraint object. Note that this function uses the
+    biased estimator for the standard deviation (i.e., NumPy's default ``np.std``).
 
     Parameters
     ----------
@@ -74,11 +75,12 @@ def data_sig(k, y, z, con_tc=None, **kwargs):
     k, y, z = np.array(k, dtype=int), np.array(y), np.array(z)
     out_array = np.empty_like(y, dtype=float)
     for kval in np.unique(k):  # loop over passed-in components
-        mask = (k == kval)
-        ypts = con_tc.filter(regex=f'{"uvw"[kval]}_').loc['y'].values.astype(float)
-        zpts = con_tc.filter(regex=f'{"uvw"[kval]}_').loc['z'].values.astype(float)
-        vals = con_tc.get_time().filter(regex=f'{"uvw"[kval]}_').std().values.astype(float)
-        out_array[mask] = interpolator((ypts, zpts), vals, (y[mask], z[mask]))
+        out_mask = (k == kval)
+        con_mask = (con_tc.loc['k'] == kval).values
+        ypts = con_tc.iloc[2, con_mask].values.astype(float)
+        zpts = con_tc.iloc[3, con_mask].values.astype(float)
+        vals = np.std(con_tc.iloc[4:, con_mask], axis=0).astype(float)
+        out_array[out_mask] = interpolator((ypts, zpts), vals, (y[out_mask], z[out_mask]))
     return out_array
 
 

@@ -17,7 +17,7 @@ def get_magnitudes(spat_df, spec_func, sig_func, **kwargs):
 
 
 def spc_to_mag(spat_df, spc_arr, sig_func, **kwargs):
-    """Convert spectral dataframe to magnitudes
+    """Convert spectral array to magnitudes (sets DC component to 0)
     """
     # get unscaled magnitudes
     t, freq = get_freq(**kwargs)

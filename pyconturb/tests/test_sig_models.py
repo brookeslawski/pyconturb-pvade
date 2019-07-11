@@ -58,17 +58,16 @@ def test_iec_sig_value():
 
 
 def test_data_sig():
-    """verify the data interpolator implement in data_sig works + dtype"""
+    """verify 1) data interpolator in data_sig works, 2) dtype 3) bad columns"""
     # given
     k, y, z = np.repeat(range(3), 3), np.zeros(9, dtype=int), np.tile([40, 70, 100], 3)
     con_tc = TimeConstraint([[0, 0, 1, 1, 2, 2], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
                              [50, 90, 50, 90, 50, 90],
                              [0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6]],
                             index=['k', 'x', 'y', 'z', 0.0, 1.0],
-                            columns=['u_p0', 'u_p1', 'v_p0', 'v_p1', 'w_p0', 'w_p1'])
+                            columns=['a', 'b', 'c', 'd', 'e', 'f'])
     std_tc = con_tc.get_time().std()
-    sig_theo = np.interp([0, 0.5, 1, 2, 2.5, 3, 4, 4.5, 5],
-                         np.arange(std_tc.size), std_tc)
+    sig_theo = [0.5 , 0.75, 1.  , 1.5 , 1.75, 2.  , 2.5 , 2.75, 3.]
     # when
     sig_arr = data_sig(k, y, z, con_tc)
     # then
