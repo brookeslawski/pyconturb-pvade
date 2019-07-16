@@ -27,21 +27,24 @@ to install the optional dependencies related to testing and building documentati
 Normal user
 --------------------------------
 
+* Install the most recent version of the code::
+  
+    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
+
+* Update an installation to the most recent version::
+
+    pip install --upgrade git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
+
 * To run the notebook examples on your machine (optional)::
 
     pip install jupyter matplotlib
 
-* Install most recent official release::
+* To install based off a particular tag (e.g., ``v2.0``), branch
+  (e.g., ``master``) or commit hash (e.g., ``1ea5060453ee9ce26b265065333dd1d370b3e8b6``)::
   
-    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@latest
-
-* Install most recent unofficial version::
-  
-    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
-
-* Pull any new changes to the unofficial version::
-
-    pip install --upgrade git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
+    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@v2.0
+    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@master
+    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@1ea5060453ee9ce26b265065333dd1d370b3e8b6
 
 
 Developer
@@ -56,4 +59,3 @@ follows::
    cd PyConTurb
    pip install -r dev_reqs.txt
    pip install -e .
-

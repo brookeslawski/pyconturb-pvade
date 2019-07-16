@@ -45,6 +45,29 @@ an issue using GitLab's
 "Feature request" template for features you'd like to see implemented.
 
 
+Contribution guidelines
+-------------------------
+
+You are very welcome to implement suggested changes to the code. Collaboration
+is encouraged! Here is a quick-start guide to contributing:
+
+#. Make sure your master branch is updated (``git pull origin master``).  
+#. Switch to your feature branch (``git checkout -b branch_name``).  
+#. Make your desired changes to the code.  
+#. Add tests for your code in the relevant ``pyconturb/tests/`` file(s). See
+   other test files to figure out how to do this.  
+#. Run the tests locally to make sure they all pass (from repo,
+   ``python -m pytest pyconturb/tests``).  
+#. Add and commit your related files using git if you haven't already.  
+#. Push your feature branch to GitLab (``git push origin branch_name``).  
+#. Create a merge request in GitLab from your feature branch and assign to
+   ``@rink``.  
+#. Make any suggested changes based on the code review, then push those
+   changes.  
+#. After the merge request is accepted, pull the new changes to master
+   (``git checkout master``, then ``git pull origin master``).
+
+
 Theory
 -------
 
