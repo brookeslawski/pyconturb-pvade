@@ -2,9 +2,10 @@
 
 ## Minimum working example
 
-This code block should reproduce the bug without any additions.
+Place your MWE below.
 ```
-(place code here)
+Place your MWE code here. It should be as simple as possible and
+rely on no external files.
 ```
 
 ## Expected behavior
