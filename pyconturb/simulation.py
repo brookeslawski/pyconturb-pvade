@@ -21,7 +21,7 @@ from pyconturb._utils import combine_spat_con, _spat_rownames, _DEF_KWARGS, clea
 
 def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
              wsp_func=None, sig_func=None, spec_func=None,
-             interp_data='none', seed=None, mem_gb=0.10, verbose=False, **kwargs):
+             interp_data='none', seed=None, nf_chunk=1, verbose=False, **kwargs):
     """Generate a turbulence box (constrained or unconstrained).
 
     Parameters
@@ -58,10 +58,10 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     seed : int, optional
         Optional random seed for turbulence generation. Use the same seed and
         settings to regenerate the same turbulence box.
-    mem_gb : float, optional
-        Size of memory to use when doing the calculations. Increase this number
-        to have faster turbulence generation, but if the number becomes too
-        large the generation will fail.
+    nf_chunk : int, optional
+        Number of frequencies in a chunk of analysis. Increasing this number may speed
+        up computation but may result in more (or too much) memory used. Smaller grids
+        may benefit from larger values for ``nf_chunk``. Default is 1.
     verbose : bool, optional
         Print extra information during turbulence generation. Default is False.
     **kwargs
@@ -139,11 +139,6 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     # if more than one point, correlate everything
     else:
         turb_fft = np.zeros((n_f, n_s), dtype=complex)
-        nf_chunk = int(mem_gb * (2 ** 29) / (all_spat_df.shape[1] ** 2))  # no. of freqs in a chunk
-        if nf_chunk < 1:  # insufficient memory for requested no. of points
-            raise MemoryError('Insufficient memory! Consider increasing ' +
-                              'the allowable usable memory or using a bigger' +
-                              ' machine.')
         n_chunks = int(np.ceil(freq.size / nf_chunk))
 
         # loop through frequencies
