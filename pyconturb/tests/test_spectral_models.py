@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Test functions in wind_profiles.py
-
-Author
-------
-Jenni Rinker
-rink@dtu.dk
+"""Test functions for power spectra
 """
 
 import numpy as np

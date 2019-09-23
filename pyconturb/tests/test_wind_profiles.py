@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""test functions
+"""Test functions for mean wind speed profile
 """
 
 import numpy as np

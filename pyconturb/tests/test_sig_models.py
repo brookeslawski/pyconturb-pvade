@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""test functions
+"""Test functions for standard deviation
 """
 import numpy as np
 import pandas as pd
@@ -66,8 +66,7 @@ def test_data_sig():
                              [0, 0, 0, 0, 0, 0], [1, 2, 3, 4, 5, 6]],
                             index=['k', 'x', 'y', 'z', 0.0, 1.0],
                             columns=['a', 'b', 'c', 'd', 'e', 'f'])
-    std_tc = con_tc.get_time().std()
-    sig_theo = [0.5 , 0.75, 1.  , 1.5 , 1.75, 2.  , 2.5 , 2.75, 3.]
+    sig_theo = [0.5, 0.75, 1., 1.5, 1.75, 2., 2.5, 2.75, 3.]
     # when
     sig_arr = data_sig(k, y, z, con_tc)
     # then

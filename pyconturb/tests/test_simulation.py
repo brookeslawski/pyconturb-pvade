@@ -111,9 +111,72 @@ def test_gen_turb_bad_con_tc():
         gen_turb(spat_df, con_tc=con_tc, **kwargs)
 
 
+def test_gen_turb_wsp_func():
+    """verify that you recover the custom mean wind speed"""
+    # given
+    spat_df = pd.DataFrame([[0, 1, 2, 0], [0, 0, 0, 0], [0, 0, 0, 0], [50, 50, 50, 90]],
+                           index=_spat_rownames, columns=['u_p0', 'v_p0', 'w_p0', 'u_p1'])
+    wsp_func = lambda y, z, **kwargs: 4  # constant wind speed
+    kwargs = {'u_ref': 10}
+    u_theory = np.array([4, 0, 0, 4])
+    # when
+    wsp_vals = gen_turb(spat_df, wsp_func=wsp_func, **kwargs).mean().values
+    # then
+    np.testing.assert_almost_equal(u_theory, wsp_vals)
+
+
+def test_gen_turb_sig_func():
+    """verify that you recover the custom turb. standard deviation"""
+    # given
+    spat_df = pd.DataFrame([[0, 1, 2], [0, 0, 0], [0, 0, 0], [50, 50, 50]],
+                           index=_spat_rownames, columns=['u_p0', 'v_p0', 'w_p0'])
+    sig_theory = np.array([1, 1, 1])
+    sig_func = lambda k, y, z, **kwargs: np.ones_like(y)  # constant std dev
+    kwargs = {'u_ref': 10, 'T': 1, 'dt': 0.25}
+    # when
+    turb = gen_turb(spat_df, sig_func=sig_func, **kwargs)
+    sig_vals = np.std(turb, axis=0, ddof=1)
+    # then
+    np.testing.assert_almost_equal(sig_theory, sig_vals)
+
+
+def test_gen_turb_spec_func():
+    """verify custom power spectrum recovered. 4 time steps, spec is powers of integers
+    so mags should proceed linearly in steps of 0.5 (2-sidedness)."""
+    # given
+    spat_df = pd.DataFrame([[0, 1, 2], [0, 0, 0], [0, 0, 0], [50, 50, 50]],
+                           index=_spat_rownames, columns=['u_p0', 'v_p0', 'w_p0'])
+    def spec_func(f, k, y, z, **kwargs):
+        """square of arange should make magnitudes proceed linearly"""
+        return np.tile(np.arange(f.size)**2, (y.size, 1)).T  # tile to match n_inp
+    normmag_theory = np.tile(np.linspace(0, 1, 3), (spat_df.shape[1], 1)).T
+    kwargs = {'u_ref': 10, 'T': 1, 'dt': 0.25}
+    # when
+    turb = gen_turb(spat_df, spec_func=spec_func, **kwargs)
+    mags = np.abs(np.fft.rfft(turb.values, axis=0)) / 2  # n_t = 2
+    mags[0, :] = 0
+    normmag_vals = mags / np.max(mags, axis=0)
+    # then
+    np.testing.assert_allclose(normmag_theory, normmag_vals)
+
+
+def test_gen_turb_verbose():
+    """make sure the verbose option doesn't break anything"""
+    # given
+    spat_df = pd.DataFrame(np.ones((4, 1)), index=_spat_rownames)
+    kwargs = {'u_ref': 10, 'T': 1, 'dt': 0.5, 'verbose': True}
+    # when
+    gen_turb(spat_df, **kwargs)
+    # then
+    pass
+
+
 if __name__ == '__main__':
     test_iec_turb_mn_std_dev()
     test_gen_turb_con()
     test_gen_turb_warnings()
     test_gen_turb_bad_interp()
     test_gen_turb_bad_con_tc()
+    test_gen_turb_wsp_func()
+    test_gen_turb_sig_func()
+    test_gen_turb_spec_func()

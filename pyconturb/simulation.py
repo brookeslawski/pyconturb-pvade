@@ -13,9 +13,9 @@ import pandas as pd
 from pyconturb.coherence import get_coh_mat
 from pyconturb.core import TimeConstraint
 from pyconturb.magnitudes import get_magnitudes
-from pyconturb.wind_profiles import get_wsp_values, power_profile, data_profile
-from pyconturb.spectral_models import kaimal_spectrum, data_spectrum
 from pyconturb.sig_models import iec_sig, data_sig
+from pyconturb.spectral_models import kaimal_spectrum, data_spectrum
+from pyconturb.wind_profiles import get_wsp_values, power_profile, data_profile
 from pyconturb._utils import combine_spat_con, _spat_rownames, _DEF_KWARGS, clean_turb
 
 
@@ -89,18 +89,8 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
 
     # add T, dt, con_tc to kwargs
     kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'dt': dt, 'con_tc': con_tc}
-    # assign profile functions
-    prof_funcs = [power_profile, iec_sig,  kaimal_spectrum]  # default functions
-    if interp_data == 'none': interp_data = []  # no profs interpolated
-    elif interp_data == 'all': interp_data = ['wsp', 'sig', 'spec']  # all profs interp'd
-    elif not isinstance(interp_data, list):  # bad input
-        raise ValueError('"interp_data" must be either "all", "none", or a list!')
-    for prof in interp_data:
-        if prof == 'wsp': prof_funcs[0] = data_profile
-        elif prof == 'sig': prof_funcs[1] = data_sig
-        elif prof == 'spec': prof_funcs[2] = data_spectrum
-        else: raise ValueError(f'Unknown profile type "{prof}"!')  # bad input
-    wsp_func, sig_func, spec_func = prof_funcs
+    wsp_func, sig_func, spec_func = assign_profile_functions(wsp_func, sig_func,
+                                                             spec_func, interp_data)
 
     # assign/create constraining data
     n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
@@ -138,7 +128,9 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
 
     # get uncorrelated phasors for simulation
     np.random.seed(seed=seed)  # initialize random number generator
-    sim_unc_pha = np.exp(1j * 2 * np.pi * np.random.rand(n_f, n_s - n_d))
+    sim_unc_pha = np.exp(1j * 2*np.pi * np.random.rand(n_f, n_s - n_d))
+    if not (n_t % 2):  # if even time steps, last phase must be 0 or pi for real sig
+        sim_unc_pha[-1, :] = np.exp(1j * np.round(np.real(sim_unc_pha[-1, :])) * np.pi)
 
     # no coherence if one point
     if one_point:
@@ -186,7 +178,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
 
         del all_coh_mat  # free up memory
 
-    # convert to time domain, add mean wind speed profile
+    # convert to time domain and pandas dataframe
     turb_arr = np.fft.irfft(turb_fft, axis=0, n=n_t) * n_t
     turb_df = pd.DataFrame(turb_arr, columns=all_spat_df.columns, index=t)
 
@@ -201,3 +193,23 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         print('Turbulence generation complete.')
 
     return turb_df
+
+
+def assign_profile_functions(wsp_func, sig_func, spec_func, interp_data):
+    """Assign profile functions based on user inputs"""
+    # assign iec profile functions as default if nothing was passed in
+    prof_funcs = [wsp_func, sig_func, spec_func]  # given inputs
+    iec_funcs = [power_profile, iec_sig,  kaimal_spectrum]  # iec default functions
+    prof_funcs = [tup[tup[0] is None] for tup in zip(prof_funcs, iec_funcs)]  # overwrite
+    # change interp_data to list format if 'all' or 'none' passed in
+    if interp_data == 'none': interp_data = []  # no profs interpolated
+    elif interp_data == 'all': interp_data = ['wsp', 'sig', 'spec']  # all profs interp'd
+    elif not isinstance(interp_data, list):  # bad input
+        raise ValueError('"interp_data" must be either "all", "none", or a list!')
+    # assign the interp_data profiles IF no custom function was passed in
+    for prof in interp_data:
+        if (prof == 'wsp') and (wsp_func is None): prof_funcs[0] = data_profile
+        elif (prof == 'sig') and (sig_func is None): prof_funcs[1] = data_sig
+        elif (prof == 'spec') and (spec_func is None): prof_funcs[2] = data_spectrum
+        else: raise ValueError(f'Unknown profile type "{prof}"!')  # bad input
+    return prof_funcs
