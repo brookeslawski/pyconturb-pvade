@@ -1,5 +1,6 @@
 # debugging files
 DELETEME*
+junk/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
