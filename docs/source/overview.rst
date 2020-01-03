@@ -40,7 +40,7 @@ Bugs/feature requests
 This package is a labor of love, and it has by no means achieved perfection. If
 you find a bug or you think it could benefit from a cool feature, please submit
 an issue using GitLab's
-`issue tracker <https://gitlab.windenergy.dtu.dk/rink/pyconturb/issues>`_.
+`issue tracker <https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb/issues>`_.
 **NOTE!** Please be sure to use the "Bug" template for bugs and the
 "Feature request" template for features you'd like to see implemented.
 
