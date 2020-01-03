@@ -29,11 +29,11 @@ Normal user
 
 * Install the most recent version of the code::
   
-    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
+    pip install git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git
 
 * Update an installation to the most recent version::
 
-    pip install --upgrade git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
+    pip install --upgrade git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git
 
 * To run the notebook examples on your machine (optional)::
 
@@ -42,9 +42,9 @@ Normal user
 * To install based off a particular tag (e.g., ``v2.0``), branch
   (e.g., ``master``) or commit hash (e.g., ``1ea5060453ee9ce26b265065333dd1d370b3e8b6``)::
   
-    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@v2.0
-    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@master
-    pip install git+https://gitlab.windenergy.dtu.dk/rink/pyconturb.git@1ea5060453ee9ce26b265065333dd1d370b3e8b6
+    pip install git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git@v2.0
+    pip install git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git@master
+    pip install git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git@1ea5060453ee9ce26b265065333dd1d370b3e8b6
 
 
 Developer
@@ -55,7 +55,7 @@ We highly recommend developers install PyConTurb into its own environment
 options into the current active environment in an Anaconda Prompt are as
 follows::
 
-   git clone https://gitlab.windenergy.dtu.dk/rink/pyconturb.git
+   git clone https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git
    cd PyConTurb
    pip install -r dev_reqs.txt
    pip install -e .

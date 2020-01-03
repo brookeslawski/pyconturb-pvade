@@ -7,7 +7,7 @@ Welcome to PyConTurb
 *- An open-source, constrained-turbulence generator for loads validation.*
 
 **Quick links:** :ref:`installation`, :ref:`Get started <overview>`, :ref:`Reporting bugs <overview>`,
-`Source code <https://gitlab.windenergy.dtu.dk/rink/pyconturb>`_.
+`Source code <https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb>`_.
 
 .. image:: ../logo.png
     :align: center
@@ -27,7 +27,7 @@ in the :ref:`installation` section, check out the :ref:`overview` and then look
 at :ref:`examples`.
 
 The source code is located
-`here on GitLab <https://gitlab.windenergy.dtu.dk/rink/pyconturb>`_.
+`here on GitLab <https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb>`_.
 
 
 Contents:
