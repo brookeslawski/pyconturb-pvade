@@ -1,7 +1,7 @@
-[![pipeline status](https://gitlab.windenergy.dtu.dk/rink/pyconturb/badges/master/pipeline.svg)](https://gitlab.windenergy.dtu.dk/rink/pyconturb/commits/master)
-[![coverage report](https://gitlab.windenergy.dtu.dk/rink/pyconturb/badges/master/coverage.svg)](https://gitlab.windenergy.dtu.dk/rink/pyconturb/commits/master)
+[![pipeline status](https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb/badges/master/pipeline.svg)](https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb/commits/master)
+[![coverage report](https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb/badges/master/coverage.svg)](https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb/commits/master)
 
-![PyConTurb](https://gitlab.windenergy.dtu.dk/rink/pyconturb/raw/master/docs/logo.png)
+![PyConTurb](https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb/raw/master/docs/logo.png)
 
 # PyConTurb: Constrained Stochastic Turbulence for Wind Energy Applications
 
