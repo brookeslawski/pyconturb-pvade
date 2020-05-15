@@ -37,12 +37,13 @@ def test_gen_turb_con():
     """mean & std of iec turbulence, con'd turb is regen'd, correct columns
     """
     # given -- constraining points
-    con_spat_df = pd.DataFrame([[0, 0, 0, 70]], columns=_spat_rownames)
+    con_spat_df = pd.DataFrame([[0, 0, 0, 70]], columns=_spat_rownames).T
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
               'dt': 0.5, 'seed': 1337}
     coh_model = 'iec'
-    con_turb_df = gen_turb(con_spat_df.T, coh_model=coh_model, **kwargs)
-    con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df, con_turb_df=con_turb_df)
+    con_turb_df = gen_turb(con_spat_df, coh_model=coh_model, **kwargs)
+    con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df.T,
+                                            con_turb_df=con_turb_df)  # old spat_df was T
     # given -- simulated, constrainted turbulence
     y, z = 0, [70, 72]
     spat_df = gen_spat_grid(y, z)
@@ -171,6 +172,23 @@ def test_gen_turb_verbose():
     pass
 
 
+def test_gen_turb_sims_collocated():
+    """Should return None if all sim pts collocated with constraints"""
+    # given -- constraining points
+    con_spat_df = pd.DataFrame([[0, 0, 0, 70]], columns=_spat_rownames).T
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
+              'dt': 0.5, 'seed': 1337}
+    coh_model = 'iec'
+    con_turb_df = gen_turb(con_spat_df, coh_model=coh_model, **kwargs)
+    con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df.T, con_turb_df=con_turb_df)
+    # given -- simulated, constrainted turbulence
+    spat_df = con_spat_df  # simulate same points as constraint
+    # when
+    sim_turb_df = gen_turb(spat_df, con_tc=con_tc, coh_model=coh_model, **kwargs)
+    # then (std dev, mean, and regen'd time series should be close; right colnames)
+    assert sim_turb_df is None
+
+
 if __name__ == '__main__':
     test_iec_turb_mn_std_dev()
     test_gen_turb_con()
@@ -180,3 +198,4 @@ if __name__ == '__main__':
     test_gen_turb_wsp_func()
     test_gen_turb_sig_func()
     test_gen_turb_spec_func()
+    test_gen_turb_sims_collocated()

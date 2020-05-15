@@ -16,7 +16,8 @@ from pyconturb.magnitudes import get_magnitudes
 from pyconturb.sig_models import iec_sig, data_sig
 from pyconturb.spectral_models import kaimal_spectrum, data_spectrum
 from pyconturb.wind_profiles import get_wsp_values, power_profile, data_profile
-from pyconturb._utils import combine_spat_con, _spat_rownames, _DEF_KWARGS, clean_turb
+from pyconturb._utils import (combine_spat_con, _spat_rownames, _DEF_KWARGS,
+                              clean_turb, check_sims_collocated)
 
 
 def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
@@ -86,6 +87,11 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     # if asked to interpret but no data, throw warning
     if (((interp_data == 'all') or isinstance(interp_data, list)) and (con_tc is None)):
         raise ValueError('If "interp_data" is not "none", constraints must be given!')
+    # return None if all simulation points collocated with constraints
+    if check_sims_collocated(spat_df, con_tc):
+        print('All simulation points collocated with constraints! '
+              + 'Nothing to simulate.')
+        return None
 
     # add T, dt, con_tc to kwargs
     kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'dt': dt, 'con_tc': con_tc}

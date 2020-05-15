@@ -7,11 +7,35 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pyconturb import TimeConstraint
+from pyconturb import TimeConstraint, gen_turb
 import pyconturb._utils as utils
 
 
 _spat_rownames = utils._spat_rownames
+
+
+def test_check_sims_collocated():
+    """verify function works when no unique simulation points"""
+    # given -- constraining points
+    spat_arr = [[0, 0, 0, 70], [1, 0, 0, 70], [2, 0, 0, 70]]
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
+              'dt': 0.5, 'seed': 1337}
+    inp_out = [(0, 1, False), (0, 2, True)]
+    
+    for (start, stop, res_theo) in inp_out:
+    
+        con_spat_df = pd.DataFrame(spat_arr[start:stop],
+                                   columns=_spat_rownames).T
+        coh_model = 'iec'
+        con_turb_df = gen_turb(con_spat_df, coh_model=coh_model, **kwargs)
+        con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df.T, con_turb_df=con_turb_df)
+        # given -- simulated, constrainted turbulence
+        spat_df = pd.DataFrame([[0, 0, 0, 70],
+                                [1, 0, 0, 70]], columns=_spat_rownames).T
+        # when
+        res = utils.check_sims_collocated(spat_df, con_tc)
+        # then
+        assert res == res_theo
 
 
 def test_clean_turb():
@@ -197,6 +221,7 @@ def test_interpolator_badinput():
 
 
 if __name__ == '__main__':
+    test_check_sims_collocated()
     test_clean_turb()
     test_combine_spat_con_empty()
     test_combine_spat_con_nonunique()
