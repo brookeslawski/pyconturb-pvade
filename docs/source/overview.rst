@@ -1,8 +1,8 @@
 .. _overview:
 
 
-Overview
-===========================
+Starting, bugs and developing
+==============================
 
 PyConTurb can be used in three main ways:  
 
@@ -45,20 +45,28 @@ an issue using GitLab's
 "Feature request" template for features you'd like to see implemented.
 
 
-Contribution guidelines
--------------------------
+Collaborative code development
+-------------------------------
 
-You are very welcome to implement suggested changes to the code. Collaboration
-is encouraged! Here is a quick-start guide to contributing:
+PyConTurb is an open-source, community-based project. Therefore, merge requests
+with bug fixes or implemented feature requests are welcome! To ensure that
+your merge request is reviewed and accepted as quickly as possible, please
+be sure to write a test for your bug fix and be sure to adhere to PEP8
+conventions. Submitting a merge request from a branch in your own fork of
+the repo is preferred, but you may also work in a branch on this repo.
 
+Here is a quick, step-by-step guide for fixing a bug:
+
+#. If the bug is not reported in the `issue tracker <https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb/issues>`_,
 #. Make sure your master branch is updated (``git pull origin master``).  
-#. Switch to your feature branch (``git checkout -b branch_name``).  
-#. Make your desired changes to the code.  
-#. Add tests for your code in the relevant ``pyconturb/tests/`` file(s). See
-   other test files to figure out how to do this.  
+#. Switch to a new branch (``git checkout -b branch_name``).  
+#. Write a test for the bug (it should fail) in the relevant
+   ``pyconturb/tests/`` file(s). See other test files to figure out how
+   to do this.  
+#. Write code to fix the bug. Be sure to follow PEP8 conventions!  
 #. Run the tests locally to make sure they all pass (from repo,
    ``python -m pytest pyconturb/tests``).  
-#. Add and commit your related files using git if you haven't already.  
+#. Add and commit your related files using git, if you haven't already.  
 #. Push your feature branch to GitLab (``git push origin branch_name``).  
 #. Create a merge request in GitLab from your feature branch and assign to
    ``@rink``.  
