@@ -14,6 +14,25 @@ import pyconturb._utils as utils
 _spat_rownames = utils._spat_rownames
 
 
+def test_check_sims_collocated():
+    """verify function works when no unique simulation points"""
+    # given -- constraining points
+    con_arr = np.array([[0, 0, 0, 70, 1], [1, 0, 0, 70, 1], [2, 0, 0, 70, 1]]).T
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
+              'dt': 0.5, 'seed': 1337}
+    inp_out = [(0, 1, False), (0, 2, True)]
+    # given -- points to simulate
+    spat_df = pd.DataFrame([[0, 0, 0, 70],
+                            [1, 0, 0, 70]], columns=_spat_rownames).T
+    for (start, stop, res_theo) in inp_out:
+        # given -- constraint
+        con_tc = TimeConstraint(con_arr[:, start:stop], index=_spat_rownames + [0])
+        # when
+        res = utils.check_sims_collocated(spat_df, con_tc)
+        # then
+        assert res == res_theo
+
+
 def test_clean_turb():
     """verify correct columns are removed and others are renamed (also handle floats)"""
     # given
@@ -197,6 +216,7 @@ def test_interpolator_badinput():
 
 
 if __name__ == '__main__':
+    test_check_sims_collocated()
     test_clean_turb()
     test_combine_spat_con_empty()
     test_combine_spat_con_nonunique()

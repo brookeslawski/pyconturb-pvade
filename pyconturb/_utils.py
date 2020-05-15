@@ -15,6 +15,22 @@ _HAWC2_BIN_FMT = '<f'  # HAWC2 binary turbulence datatype
 _HAWC2_TURB_COOR = {'u': -1, 'v': -1, 'w': 1}  # hawc2 turb xyz to uvw
 
 
+def check_sims_collocated(spat_df, con_tc):
+    """Determine if the simulation points are all collocated with the 
+    constraints. Returns boolean (True=all collocated)"""
+    if con_tc is None:  # no constraints
+        return False
+    con_spat_df = con_tc.get_spat()
+    # numerical arrays for which rows 
+    con_arr = con_spat_df.T.values
+    spat_arr = spat_df.T.values
+    # magic with broadcasting (thank you numpy)
+    sim_arr = spat_arr[:, np.newaxis, :]  # [ns, 1, 4] array of sim pts
+    s_in_c = np.all(np.equal(sim_arr, con_arr), axis=2)  # [ns, nc] array of if si is in cj
+    s_non_uniq = np.any(s_in_c, axis=1)  # [ns] array of if s is non unique
+    return np.all(s_non_uniq)
+
+
 def clean_turb(spat_df, all_spat_df, turb_df, decimals=10):
     """Remove the columns we don't return and rename the rest correctly. Will check only
     to decimals places when removing duplicates (data unchanged)."""
