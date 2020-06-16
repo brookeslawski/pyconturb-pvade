@@ -36,5 +36,6 @@ Contents:
     
         installation
         overview
+        notebooks/outputs
         reference_guide
         examples

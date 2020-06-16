@@ -1,6 +1,8 @@
 # debugging files
 DELETEME*
 junk/*
+*.bts
+*.bin
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

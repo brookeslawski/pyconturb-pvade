@@ -1,15 +1,9 @@
-"""Input-output module for files related to HAWC2
+"""Reading HAWC2 results files (.set and .dat)
 
 Notes
 -----
 Much of this was copied, modified, and/or cleaned from DTU's Wind Energy
-Toolbox.
-
-
-Author
-------
-Jenni Rinker
-rink@dtu.dk
+Toolbox. https://gitlab.windenergy.dtu.dk/toolbox/WindEnergyToolbox
 """
 import os
 
