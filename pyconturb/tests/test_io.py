@@ -15,11 +15,14 @@ def test_pctdf_to_h2turb():
     # given
     path = '.'
     spat_df = gen_spat_grid(0, [50, 70])
-    turb_df = pd.DataFrame(np.random.rand(100, 6),
+    nt, dt = 100, 0.2
+    t = np.arange(nt) * dt
+    turb_df = pd.DataFrame(np.random.rand(nt, 6),
+                           index=t,
                            columns=[f'{c}_p{i}' for i in range(2) for c in 'uvw'])
     # when
     df_to_h2turb(turb_df, spat_df, '.')
-    test_df = h2turb_to_df(spat_df, path)
+    test_df = h2turb_to_df(spat_df, path, nt=nt, dt=dt)
     [os.remove(os.path.join('.', f'{c}.bin')) for c in 'uvw']
     # then
     pd.testing.assert_frame_equal(turb_df, test_df, check_dtype=False)

@@ -15,7 +15,7 @@ _TS_BIN_FMT = '<h4l12fl'  # TurbSim binary format
 
 
 def bts_to_df(path):
-    """"""
+    """Load TurbSim-style .bts file to pyconturb dataframe"""
     if path.endswith('.bts'):  # remove file extension, will be added back later
         path = path[:-4]
     u_scl = np.zeros(3, np.float32)
@@ -175,14 +175,16 @@ def h2turb_to_arr(spat_df, path):
     return bin_arr
 
 
-def h2turb_to_df(spat_df, path, prefix=''):
+def h2turb_to_df(spat_df, path, nt=600, dt=1, prefix=''):
     """load a hawc2 binary file into a pandas datafram with transform to uvw"""
-    turb_df = pd.DataFrame()
+    t = np.arange(nt) * dt
+    turb_df = pd.DataFrame(index=t)
     for c in 'uvw':
         comp_path = os.path.join(path, f'{prefix}{c}.bin')
         arr = h2turb_to_arr(spat_df, comp_path)
         nx, ny, nz = arr.shape
-        comp_df = pd.DataFrame(arr.reshape(nx, ny*nz)).add_prefix(f'{c}_p')
+        comp_df = pd.DataFrame(arr.reshape(nx, ny*nz),
+                               index=t).add_prefix(f'{c}_p')
         turb_df = turb_df.join(comp_df, how='outer')
     turb_df = turb_df[[f'{c}_p{i}' for i in range(2) for c in 'uvw']]
     return turb_df
