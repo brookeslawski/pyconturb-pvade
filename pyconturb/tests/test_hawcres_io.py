@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 """Test functions for converting to hawc2 binary and reading into hawc2
-
-Author
-------
-Jenni Rinker
-rink@dtu.dk
 """
 import os
 import shutil
@@ -17,7 +12,7 @@ import pytest
 
 from pyconturb.simulation import gen_turb
 from pyconturb.wind_profiles import constant_profile
-from pyconturb.io.hawc2 import dat_to_df, get_unique_chnl_names
+from pyconturb._hawcres_io import dat_to_df
 from pyconturb._utils import gen_spat_grid, make_hawc2_input, df_to_h2turb
 
 
