@@ -36,11 +36,11 @@ def test_pctdf_to_bts():
     spat_df = gen_spat_grid(0, [50, 70])
     turb_df = pd.DataFrame(np.random.rand(100, 6),
                            columns=[f'{c}_p{i}' for i in range(2) for c in 'uvw'])
-    yzhubs = [None, (0, 50)]
+    uzhubs = [None, (0.5, 60)]
     # when
     for path in paths:  # check with and without extension
-        for yzhub in yzhubs:
-            df_to_bts(turb_df, spat_df, path, yzhub=yzhub)
+        for uzhub in uzhubs:
+            df_to_bts(turb_df, spat_df, path, uzhub=uzhub)
             test_df = bts_to_df(path)
             os.remove('./garbage.bts')
             # then
@@ -59,7 +59,7 @@ def test_pctdf_to_bts_const():
     turb_df = pd.DataFrame(np.ones((100, 6)),
                            columns=[f'{c}_p{i}' for i in range(2) for c in 'uvw'])
     # when
-    df_to_bts(turb_df, spat_df, path, yzhub=None)
+    df_to_bts(turb_df, spat_df, path, uzhub=None)
     test_df = bts_to_df(path)
     os.remove('./garbage.bts')
     # then

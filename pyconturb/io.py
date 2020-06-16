@@ -56,7 +56,7 @@ def bts_to_df(path):
     return turb_df
 
 
-def df_to_bts(turb_df, spat_df, path, yzhub=None):
+def df_to_bts(turb_df, spat_df, path, uzhub=None):
     """pyconturb-style turbulence dataframe to TurbSim-style binary file
     Code modified based on `turbsim` in PyTurbSim:
         https://github.com/lkilcher/pyTurbSim/blob/master/pyts/io/write.py
@@ -88,15 +88,12 @@ def df_to_bts(turb_df, spat_df, path, yzhub=None):
     else:
         dz = np.mean(z[1:] - z[:-1])  # hopefully will reduce possible errors
     dt = turb_df.index[-1] / (turb_df.shape[0] - 1)  # time step
-    if yzhub is None:  # default is center of grid
+    if uzhub is None:  # default is center of grid
         zhub = z[z.size // 2]  # halfway up
         u_df = turb_df.filter(regex=f'u_', axis=1).values
         uhub = u_df[:, u_df.shape[1] // 2].mean()  # mean of center of grid
     else:
-        yhub, zhub = yzhub
-        means = turb_df.iloc[:, (np.isclose(spat_df.loc['y'], yhub) &
-                                 np.isclose(spat_df.loc['z'], zhub))].mean()
-        uhub = float(means.filter(regex='u_'))
+        uhub, zhub = uzhub
     # convert pyconturb dataframe to pyturbsim format (3 x ny x nz x nt)
     ts = np.empty((3, ny, nz, nt))
     for i, c in enumerate('uvw'):
