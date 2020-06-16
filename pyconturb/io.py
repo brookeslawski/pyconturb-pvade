@@ -193,5 +193,5 @@ def h2turb_to_df(spat_df, path, nt=600, dt=1, prefix=''):
         comp_df = pd.DataFrame(arr.reshape(nx, ny*nz),
                                index=t).add_prefix(f'{c}_p')
         turb_df = turb_df.join(comp_df, how='outer')
-    turb_df = turb_df[[f'{c}_p{i}' for i in range(2) for c in 'uvw']]
+    turb_df = turb_df[[f'{c}_p{i}' for i in range(ny*nz) for c in 'uvw']]
     return turb_df
