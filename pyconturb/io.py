@@ -79,8 +79,14 @@ def df_to_bts(turb_df, spat_df, path, yzhub=None):
     ny = y.size  # no. of y points in grid
     nz = z.size  # no. of z points in grif
     nt = turb_df.shape[0]  # no. of time steps
-    dy = np.mean(y[1:] - y[:-1])  # hopefully will reduce possible errors
-    dz = np.mean(z[1:] - z[:-1])  # hopefully will reduce possible errors
+    if y.size == 1:
+        dy = 0
+    else:
+        dy = np.mean(y[1:] - y[:-1])  # hopefully will reduce possible errors
+    if z.size == 1:
+        dz = 0
+    else:
+        dz = np.mean(z[1:] - z[:-1])  # hopefully will reduce possible errors
     dt = turb_df.index[-1] / (turb_df.shape[0] - 1)  # time step
     if yzhub is None:  # default is center of grid
         zhub = z[z.size // 2]  # halfway up
@@ -88,8 +94,9 @@ def df_to_bts(turb_df, spat_df, path, yzhub=None):
         uhub = u_df[:, u_df.shape[1] // 2].mean()  # mean of center of grid
     else:
         yhub, zhub = yzhub
-        uhub = turb_df[:, (np.isclose(spat_df.loc['y'], yhub) &
-                           np.isclose(spat_df.loc['z'], zhub))].mean()
+        means = turb_df.iloc[:, (np.isclose(spat_df.loc['y'], yhub) &
+                                 np.isclose(spat_df.loc['z'], zhub))].mean()
+        uhub = float(means.filter(regex='u_'))
     # convert pyconturb dataframe to pyturbsim format (3 x ny x nz x nt)
     ts = np.empty((3, ny, nz, nt))
     for i, c in enumerate('uvw'):

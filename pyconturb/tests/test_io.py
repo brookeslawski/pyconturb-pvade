@@ -35,17 +35,19 @@ def test_pctdf_to_bts():
     spat_df = gen_spat_grid(0, [50, 70])
     turb_df = pd.DataFrame(np.random.rand(100, 6),
                            columns=[f'{c}_p{i}' for i in range(2) for c in 'uvw'])
+    yzhubs = [None, (0, 50)]
     # when
     for path in paths:  # check with and without extension
-        df_to_bts(turb_df, spat_df, path)
-        test_df = bts_to_df(path)
-        os.remove('./garbage.bts')
-        # then
-        for c in 'uvw':  # pandas won't ignore column order, so use numpy instead
-            turb_c_df = turb_df.filter(regex=f'{c}_')
-            test_c_df = test_df.filter(regex=f'{c}_')
-            np.testing.assert_allclose(turb_c_df, test_c_df,
-                                       atol=1e-5, rtol=np.inf)  # just look at abs tol
+        for yzhub in yzhubs:
+            df_to_bts(turb_df, spat_df, path, yzhub=yzhub)
+            test_df = bts_to_df(path)
+            os.remove('./garbage.bts')
+            # then
+            for c in 'uvw':  # pandas won't ignore column order, so use numpy instead
+                turb_c_df = turb_df.filter(regex=f'{c}_')
+                test_c_df = test_df.filter(regex=f'{c}_')
+                np.testing.assert_allclose(turb_c_df, test_c_df, atol=1e-5,
+                                           rtol=np.inf)  # just look at abs tol
 
 
 if __name__ == '__main__':
