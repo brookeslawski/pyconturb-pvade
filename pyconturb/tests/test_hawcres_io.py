@@ -10,10 +10,11 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from pyconturb.io import df_to_h2turb
 from pyconturb.simulation import gen_turb
 from pyconturb.wind_profiles import constant_profile
 from pyconturb._hawcres_io import dat_to_df
-from pyconturb._utils import gen_spat_grid, make_hawc2_input, df_to_h2turb
+from pyconturb._utils import gen_spat_grid, make_hawc2_input
 
 
 @pytest.mark.hawc2
