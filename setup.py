@@ -16,7 +16,6 @@ setup(name='pyconturb',
       author_email='rink@dtu.dk',
       license='MIT',
       packages=['pyconturb',  # top-level package
-                'pyconturb.io',  # file io
                 ],
       install_requires=['numpy',  # numberic arrays
                         'pandas',  # column-labelled arrays
