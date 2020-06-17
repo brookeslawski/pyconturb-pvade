@@ -1,8 +1,9 @@
-# debugging files
+# repo-specific ignores files
 DELETEME*
 junk/*
 *.bts
 *.bin
+pyconturb/tests/fast_sims/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
