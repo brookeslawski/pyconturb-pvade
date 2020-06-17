@@ -56,7 +56,7 @@ def bts_to_df(path):
     return turb_df
 
 
-def df_to_bts(turb_df, spat_df, path, uzhub=None):
+def df_to_bts(turb_df, spat_df, path, uzhub=None, periodic=True):
     """pyconturb-style turbulence dataframe to TurbSim-style binary file
     Code modified based on `turbsim` in PyTurbSim:
         https://github.com/lkilcher/pyTurbSim/blob/master/pyts/io/write.py
@@ -119,7 +119,7 @@ def df_to_bts(turb_df, spat_df, path, uzhub=None):
     with open(path + '.bts', 'wb') as fl:
         # write the header
         fl.write(pack(_TS_BIN_FMT,
-                      7,  # 7 indicates periodic file
+                      [7, 8][periodic],  # 7 is not periodic, 8 is periodic
                       nz,
                       ny,
                       0,  # assuming 0 tower points below grid
