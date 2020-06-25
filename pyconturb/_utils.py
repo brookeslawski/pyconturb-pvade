@@ -11,7 +11,6 @@ import scipy.interpolate as sciint
 _spat_rownames = ['k', 'x', 'y', 'z']  # row names of spatial df
 _DEF_KWARGS = {'u_ref': 0, 'z_ref': 90, 'alpha': 0.2, 'turb_class': 'A',
                'l_c': 340.2}  # lc for coherence ***NOTE THESE OVERWRITE FUNCTION DEFS
-_HAWC2_BIN_FMT = '<f'  # HAWC2 binary turbulence datatype
 _HAWC2_TURB_COOR = {'u': -1, 'v': -1, 'w': 1}  # hawc2 turb xyz to uvw
 
 
@@ -81,28 +80,6 @@ def combine_spat_con(spat_df, con_tc, drop_duplicates=True, decimals=10):
     return comb_df
 
 
-def df_to_h2turb(turb_df, spat_df, path, prefix=''):
-    """ksec3d-style turbulence dataframe to binary files for hawc2
-
-    Notes
-    -----
-    * The turbulence must have been generated on a y-z grid.
-    * The naming convention must be 'u_p0', 'v_p0, 'w_p0', 'u_p1', etc.,
-       where the point indices proceed vertically along z before horizontally
-       along y.
-    """
-    nx = turb_df.shape[0]  # turbulence dimensions for reshaping
-    ny = len(set(spat_df.loc['y'].values))
-    nz = len(set(spat_df.loc['z'].values))
-    # make and save binary files for all three components
-    for c in 'uvw':
-        arr = turb_df.filter(regex=f'{c}_', axis=1).values.reshape((nx, ny, nz))
-        bin_path = os.path.join(path, f'{prefix}{c}.bin')
-        with open(bin_path, 'wb') as bin_fid:
-            arr.astype(np.dtype(_HAWC2_BIN_FMT)).tofile(bin_fid)
-    return
-
-
 def gen_spat_grid(y, z, comps=[0, 1, 2]):
     """Generate spat_df (all turbulent components and grid defined by x and z)
 
@@ -128,30 +105,6 @@ def get_freq(**kwargs):
     n_f = n_t // 2 + 1
     freq = np.arange(n_f) / kwargs['T']
     return t, freq
-
-
-def h2turb_to_arr(spat_df, path):
-    """raw-load a hawc2 turbulent binary file to numeric array"""
-    ny, nz = pd.unique(spat_df.loc['y']).size, pd.unique(spat_df.loc['z']).size
-    bin_arr = np.fromfile(path, dtype=np.dtype(_HAWC2_BIN_FMT))
-    nx = bin_arr.size // (ny * nz)
-    if (nx * ny * nz) != bin_arr.size:
-        raise ValueError('Binary file size does not match spat_df!')
-    bin_arr.shape = (nx, ny, nz)
-    return bin_arr
-
-
-def h2turb_to_df(spat_df, path, prefix=''):
-    """load a hawc2 binary file into a pandas datafram with transform to uvw"""
-    turb_df = pd.DataFrame()
-    for c in 'uvw':
-        comp_path = os.path.join(path, f'{prefix}{c}.bin')
-        arr = h2turb_to_arr(spat_df, comp_path)
-        nx, ny, nz = arr.shape
-        comp_df = pd.DataFrame(arr.reshape(nx, ny*nz)).add_prefix(f'{c}_p')
-        turb_df = turb_df.join(comp_df, how='outer')
-    turb_df = turb_df[[f'{c}_p{i}' for i in range(2) for c in 'uvw']]
-    return turb_df
 
 
 def is_line(points):

@@ -107,7 +107,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     else:
         constrained = True
         n_d = con_tc.shape[1]  # no. of constraints
-        if not np.array_equal(con_tc.get_time().index, t):
+        if not np.allclose(con_tc.get_time().index.values.astype(float), t):
             raise ValueError('TimeConstraint time does not match requested T, dt!')
 
     # combine data and sim spat_dfs
