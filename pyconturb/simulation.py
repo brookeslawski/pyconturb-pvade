@@ -39,7 +39,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         Optional constraining data for the simulation. The TimeConstraint object is built
         into PyConTurb; see documentation for more details.
     coh_model : str, optional
-        Spatial coherence model specifier. Default is IEC 61400-1.
+        Spatial coherence model specifier. Default is IEC 61400-1, Ed. 4.
     wsp_func : function, optional
         Function to specify spatial variation of mean wind speed. See details
         in `Mean wind speed profiles` section.
@@ -78,12 +78,9 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     if verbose:
         print('Beginning turbulence simulation...')
     # if con_data passed in, throw deprecation warning
-    if ('con_data' in kwargs) and (con_tc is None):  # don't use con_data please
-        warnings.warn('The con_data option is deprecated and will be removed in future' +
-                      ' versions. Please see the documentation for how to specify' +
-                      ' time constraints.',
-                      DeprecationWarning, stacklevel=2)
-        con_tc = TimeConstraint().from_con_data(kwargs['con_data'])
+    if 'con_data' in kwargs:
+        raise ValueError('The "con_data" option is deprecated and can no longer be used.'
+                         ' Please see documentation for updated usage.')
     # if asked to interpret but no data, throw warning
     if (((interp_data == 'all') or isinstance(interp_data, list)) and (con_tc is None)):
         raise ValueError('If "interp_data" is not "none", constraints must be given!')
@@ -156,12 +153,12 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
                 all_coh_mat = get_coh_mat(freq[i_chunk * nf_chunk:
                                                (i_chunk + 1) * nf_chunk],
                                           all_spat_df, coh_model=coh_model,
-                                          **kwargs)
+                                          **kwargs)  # nf x ns x ns
 
             # assemble "sigma" matrix, which is coh matrix times mag arrays
-            coh_mat = all_coh_mat[:, :, i_f % nf_chunk]
-            sigma = np.einsum('i,j->ij', all_mags[i_f, :],
-                              all_mags[i_f, :]) * coh_mat
+            coh_mat = all_coh_mat[i_f % nf_chunk]  # ns x ns
+            sigma = (all_mags[i_f].reshape(-1, 1) *
+                     all_mags[i_f].reshape(1, -1)) * coh_mat  # ns x ns
 
             # get cholesky decomposition of sigma matrix
             cor_mat = np.linalg.cholesky(sigma)

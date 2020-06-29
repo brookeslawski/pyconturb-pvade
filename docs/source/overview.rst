@@ -76,6 +76,15 @@ Here is a quick, step-by-step guide for fixing a bug:
    (``git checkout master``, then ``git pull origin master``).
 
 
+List of contributors
+----------------------
+
+The following lovely people have made contributions to PyConTurb:  
+
+ * Emmanual Branlard  
+ * Jenni Rinker
+
+
 Theory
 -------
 

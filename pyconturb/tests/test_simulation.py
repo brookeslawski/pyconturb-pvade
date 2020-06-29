@@ -61,7 +61,7 @@ def test_gen_turb_con():
     np.testing.assert_allclose(con_turb_df.u_p0, sim_turb_df.u_p0, atol=0.01)
 
 
-def test_gen_turb_warnings():
+def test_gen_turb_error_con_data():
     """verify the warnings are thrown"""
     # given
     con_spat_df = pd.DataFrame([[0, 0, 0, 0, 75]],
@@ -73,7 +73,7 @@ def test_gen_turb_warnings():
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 75, 'T': 2,
               'dt': 1, 'con_data': con_data}
     # when and then
-    with pytest.warns(DeprecationWarning):
+    with pytest.raises(ValueError):
         gen_turb(spat_df, **kwargs)
 
 
@@ -192,7 +192,7 @@ def test_gen_turb_sims_collocated():
 if __name__ == '__main__':
     test_iec_turb_mn_std_dev()
     test_gen_turb_con()
-    test_gen_turb_warnings()
+    test_gen_turb_error_con_data()
     test_gen_turb_bad_interp()
     test_gen_turb_bad_con_tc()
     test_gen_turb_wsp_func()
