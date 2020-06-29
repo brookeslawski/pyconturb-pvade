@@ -16,10 +16,9 @@ def get_spec_values(f, spat_df, spec_func, **kwargs):
 
     The ``spec_func`` must be a function of the form::
 
-        spec_values = spec_func(f, k, y, z, **kwargs)
+        spec_values = spec_func(f, spat_df, **kwargs).
 
-    where f, k, y and z can be floats, np.arrays or pandas.Series. You can use
-    the functions built into PyConTurb (see below) or define your own custom
+    You can use the functions built into PyConTurb (see below) or define your own custom
     function. The output is assumed to be in (m^2/s^2)/Hz = m^2/s. There is no
     need to scale to the correct variance -- the spectrum is scaled during simulation
     in order to produce the standard deviation specified by ``sig_func``.
@@ -45,10 +44,10 @@ def get_spec_values(f, spat_df, spec_func, **kwargs):
         [m^2/s] PSD values for the given spatial locations(s)/component(s).
         Dimension is ``(n_f, n_sp,)``.
     """
-    return spec_func(f, spat_df.loc['k'], spat_df.loc['y'], spat_df.loc['z'], **kwargs)
+    return spec_func(f, spat_df, **kwargs)
 
 
-def data_spectrum(f, k, y, z, con_tc=None, **kwargs):
+def data_spectrum(f, spat_df, con_tc=None, **kwargs):
     """Power spectrum interpolated from a TimeConstraint object.
 
     See the Examples and/or Reference Guide for details on the interpolator logic or for
@@ -59,15 +58,11 @@ def data_spectrum(f, k, y, z, con_tc=None, **kwargs):
     ----------
     f : array-like
         [Hz] Frequency(s) for which PSD is to be calculated. Size is ``n_f``.
-    k : array-like
-        [-] Integer indicator of the turbulence component. 0=u, 1=v, 2=w. Size is
-        ``n_sp``.
-    y : array-like
-        [m] Location of point(s) in the lateral direction. Can be int/float,
-        np.array or pandas.Series.
-    z : array-like
-        [m] Location of point(s) in the vertical direction. Can be int/float,
-        np.array or pandas.Series.
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have columns
+        ``[k, x, y, z]``, and each of the ``n_sp`` rows corresponds
+        to a different spatial location and turbuine component (u, v or
+        w).
     con_tc : pyconturb.TimeConstraint
         [-] Constraint object. Must have correct format; see documentation on
         PyConTurb's TimeConstraint object for more details.
@@ -85,12 +80,13 @@ def data_spectrum(f, k, y, z, con_tc=None, **kwargs):
     # get time array and isolate/sanitize useful variables
     time_df = con_tc.get_time()
     df, nt = 1 / (time_df.index[-1] + time_df.index[1]), time_df.shape[0]
-    f_reqs, k = np.array(f, ndmin=1), np.array(k, ndmin=1, dtype=int)
-    y, z = np.array(y, ndmin=1, dtype=float), np.array(z, ndmin=1, dtype=float)
+    f_reqs = np.array(f, ndmin=1)
+    k, y, z = spat_df.loc[['k', 'y', 'z']].values
+    # y, z = np.array(y, ndmin=1, dtype=float), np.array(z, ndmin=1, dtype=float)
     # initialize spectral values
     spec_values = np.empty((f_reqs.size, y.size), dtype=float)
     for kval in np.unique(k):  # loop over the unique requested k values
-        spec_mask = (k == kval)  # cols in spec_values corr. to this kval
+        spec_mask = np.isclose(k, kval)  # cols in spec_values corr. to this kval
         con_mask = (con_tc.loc['k'] == kval).values
         ypts = con_tc.iloc[2, con_mask].values.astype(float)
         zpts = con_tc.iloc[3, con_mask].values.astype(float)
@@ -105,7 +101,7 @@ def data_spectrum(f, k, y, z, con_tc=None, **kwargs):
     return spec_values
 
 
-def kaimal_spectrum(f, k, y, z, u_ref=_DEF_KWARGS['u_ref'], **kwargs):
+def kaimal_spectrum(f, spat_df, u_ref=_DEF_KWARGS['u_ref'], **kwargs):
     """Kaimal PSD as specified in IEC 61400-1 Ed. 3.
     f is (nf,); k, y and z are (n_sp,), u_ref is float or int. returns (nf, n_sp,).
     No std scaling -- that's done with the magnitudes.
@@ -114,14 +110,11 @@ def kaimal_spectrum(f, k, y, z, u_ref=_DEF_KWARGS['u_ref'], **kwargs):
     ----------
     f : array-like
         [Hz] Frequency(s) for which PSD is to be calculated. Size is ``n_f``.
-    k : array-like
-        [-] Integer indicator of the turbulence component. 0=u, 1=v, 2=w.
-    y : array-like
-        [m] Location of point(s) in the lateral direction. Can be int/float,
-        np.array or pandas.Series.
-    z : array-like
-        [m] Location of point(s) in the vertical direction. Can be int/float,
-        np.array or pandas.Series.
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have columns
+        ``[k, x, y, z]``, and each of the ``n_sp`` rows corresponds
+        to a different spatial location and turbuine component (u, v or
+        w).
     u_ref : int/float, optional
         [m/s] Mean wind speed at reference height.
     **kwargs
@@ -134,10 +127,10 @@ def kaimal_spectrum(f, k, y, z, u_ref=_DEF_KWARGS['u_ref'], **kwargs):
         Dimension is ``(n_f, n_sp,)``.
     """
     kwargs = {**{'u_ref': u_ref}, **kwargs}  # add dflts if not given
-    k, y, z = [np.asarray(x) for x in (k, y, z)]  # in case pd.series passed in
+    k, y, z = spat_df.loc[['k', 'y', 'z']].values  # in case pd.series passed in
     f = np.reshape(f, (-1, 1))  # convert to column array
     lambda_1 = 0.7 * z * (z < 60) + 42 * (z >= 60)  # length scale changes with z
-    l_k = lambda_1 * (8.1 * (k == 0) + 2.7 * (k == 1) + 0.66 * (k == 2))
+    l_k = lambda_1 * (8.1 * np.isclose(k, 0) + 2.7 * np.isclose(k, 1) + 0.66 * np.isclose(k, 2))
     tau = np.reshape((l_k / kwargs['u_ref']), (1, -1))  # L_k / U. row vector
     spec_values = (4 * tau) / np.power(1. + 6 * tau * f, 5. / 3.)  # Kaimal 1972
     return spec_values.astype(float)  # pandas causes object issues, ensure float

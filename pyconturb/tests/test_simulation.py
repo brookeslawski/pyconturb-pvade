@@ -117,7 +117,7 @@ def test_gen_turb_wsp_func():
     # given
     spat_df = pd.DataFrame([[0, 1, 2, 0], [0, 0, 0, 0], [0, 0, 0, 0], [50, 50, 50, 90]],
                            index=_spat_rownames, columns=['u_p0', 'v_p0', 'w_p0', 'u_p1'])
-    wsp_func = lambda y, z, **kwargs: 4  # constant wind speed
+    wsp_func = lambda spat_df, **kwargs: 4 * np.isclose(spat_df.loc['k'], 0)  # constant wind speed
     kwargs = {'u_ref': 10}
     u_theory = np.array([4, 0, 0, 4])
     # when
@@ -132,7 +132,7 @@ def test_gen_turb_sig_func():
     spat_df = pd.DataFrame([[0, 1, 2], [0, 0, 0], [0, 0, 0], [50, 50, 50]],
                            index=_spat_rownames, columns=['u_p0', 'v_p0', 'w_p0'])
     sig_theory = np.array([1, 1, 1])
-    sig_func = lambda k, y, z, **kwargs: np.ones_like(y)  # constant std dev
+    sig_func = lambda spat_df, **kwargs: np.ones_like(spat_df.loc['y'])  # constant std dev
     kwargs = {'u_ref': 10, 'T': 1, 'dt': 0.25}
     # when
     turb = gen_turb(spat_df, sig_func=sig_func, **kwargs)
@@ -147,9 +147,9 @@ def test_gen_turb_spec_func():
     # given
     spat_df = pd.DataFrame([[0, 1, 2], [0, 0, 0], [0, 0, 0], [50, 50, 50]],
                            index=_spat_rownames, columns=['u_p0', 'v_p0', 'w_p0'])
-    def spec_func(f, k, y, z, **kwargs):
+    def spec_func(f, spat_df, **kwargs):
         """square of arange should make magnitudes proceed linearly"""
-        return np.tile(np.arange(f.size)**2, (y.size, 1)).T  # tile to match n_inp
+        return np.tile(np.arange(f.size)**2, (spat_df.shape[1], 1)).T  # tile to match n_inp
     normmag_theory = np.tile(np.linspace(0, 1, 3), (spat_df.shape[1], 1)).T
     kwargs = {'u_ref': 10, 'T': 1, 'dt': 0.25}
     # when

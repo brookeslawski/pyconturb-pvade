@@ -14,7 +14,7 @@ def get_sig_values(spat_df, sig_func, **kwargs):
 
     The ``sig_func`` must be a function of the form::
 
-        sig_values = sig_func(k, y, z, **kwargs)
+        sig_values = sig_func(spat_df, **kwargs)
 
     where k, y and z can be floats, np.arrays or pandas.Series. You can use
     the functions built into PyConTurb (see below) or define your own custom
@@ -38,10 +38,10 @@ def get_sig_values(spat_df, sig_func, **kwargs):
         [m/s] Turbulence standard deviation(s) for the given spatial locations(s)
         /component(s). Dimension is ``(n_sp,)``.
     """
-    return sig_func(spat_df.loc['k'], spat_df.loc['y'], spat_df.loc['z'], **kwargs)
+    return sig_func(spat_df, **kwargs)
 
 
-def data_sig(k, y, z, con_tc=None, **kwargs):
+def data_sig(spat_df, con_tc=None, **kwargs):
     """Turbulence standard deviation interpolated from a TimeConstraint object.
 
     See the Examples and/or Reference Guide for details on the interpolator logic or for
@@ -50,14 +50,11 @@ def data_sig(k, y, z, con_tc=None, **kwargs):
 
     Parameters
     ----------
-    k : array-like
-        [-] Integer indicator of the turbulence component. 0=u, 1=v, 2=w.
-    y : array-like
-        [m] Location of point(s) in the lateral direction. Can be int/float,
-        np.array or pandas.Series.
-    z : array-like
-        [m] Location of point(s) in the vertical direction. Can be int/float,
-        np.array or pandas.Series.
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have columns
+        ``[k, p_id, x, y, z]``, and each of the ``n_sp`` rows corresponds
+        to a different spatial location and turbuine component (u, v or
+        w).
     con_tc : pyconturb.TimeConstraint
         [-] Constraint object. Must have correct format; see documentation on
         PyConTurb's TimeConstraint object for more details.
@@ -72,10 +69,10 @@ def data_sig(k, y, z, con_tc=None, **kwargs):
     """
     if con_tc is None:
         raise ValueError('No data provided!')
-    k, y, z = np.array(k, dtype=int), np.array(y), np.array(z)
+    k, y, z = spat_df.loc[['k', 'y', 'z']].values
     out_array = np.empty_like(y, dtype=float)
     for kval in np.unique(k):  # loop over passed-in components
-        out_mask = (k == kval)
+        out_mask = np.isclose(k, kval)
         con_mask = (con_tc.loc['k'] == kval).values
         ypts = con_tc.iloc[2, con_mask].values.astype(float)
         zpts = con_tc.iloc[3, con_mask].values.astype(float)
@@ -84,16 +81,16 @@ def data_sig(k, y, z, con_tc=None, **kwargs):
     return out_array
 
 
-def iec_sig(k, y, z, turb_class=_DEF_KWARGS['turb_class'], **kwargs):
+def iec_sig(spat_df, turb_class=_DEF_KWARGS['turb_class'], **kwargs):
     """Turbulence standard deviation as specified in IEC 61400-1 Ed. 3.
 
     Parameters
     ----------
-    k : array-like
-        [-] Integer indicator of the turbulence component. 0=u, 1=v, 2=w.
-    y : array-like
-        [m] Location of point(s) in the lateral direction. Can be int/float,
-        np.array or pandas.Series.
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have columns
+        ``[k, p_id, x, y, z]``, and each of the ``n_sp`` rows corresponds
+        to a different spatial location and turbuine component (u, v or
+        w).
     z : array-like
         [m] Location of point(s) in the vertical direction. Can be int/float,
         np.array or pandas.Series.
@@ -111,6 +108,8 @@ def iec_sig(k, y, z, turb_class=_DEF_KWARGS['turb_class'], **kwargs):
     kwargs = {**{'turb_class': turb_class}, **kwargs}  # add dflts if not given
     assert kwargs['turb_class'].lower() in 'abc', 'Invalid or no turbulence class!'
     i_ref = {'a': 0.16, 'b': 0.14, 'c': 0.12}[kwargs['turb_class'].lower()]
+    k = spat_df.loc[['k']].values.astype(int)
+    y, z = spat_df.loc[['y', 'z']].values
     sig1 = i_ref * (0.75 * kwargs['u_ref'] + 5.6)  # std dev in u
     sig_k = sig1 * np.asarray(1.0 * (k == 0) + 0.8 * (k == 1) + 0.5 * (k == 2))
-    return np.array(sig_k, dtype=float)
+    return np.array(sig_k, dtype=float).squeeze()
