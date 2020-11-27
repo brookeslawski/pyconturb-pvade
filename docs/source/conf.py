@@ -47,7 +47,7 @@ extensions = [
 	'sphinx.ext.autosummary',  # automatically summarize func
 	'sphinx.ext.napoleon',  # numpy style docstrings
 	'sphinx.ext.viewcode',
-	'nbsphinx_link',  # link jupyter notebooks
+	'nbsphinx',  # link jupyter notebooks
 ]
 
 # Add any paths that contain templates here, relative to this directory.
