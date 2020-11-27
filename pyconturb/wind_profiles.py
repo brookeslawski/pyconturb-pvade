@@ -6,6 +6,8 @@ is the wind profile specified in IEC 61400-1 Eds. 3 and 4. A user can also speci
 custom function to model the wind speed variation as a function of ``y`` and
 ``z``. See the notes in ``get_wsp_values`` below for more details.
 """
+import warnings
+
 import numpy as np
 
 from pyconturb._utils import _DEF_KWARGS, interpolator
@@ -71,11 +73,15 @@ def constant_profile(spat_df, u_ref=0, **kwargs):
     return wsp_vals * (spat_df.loc['k'] == 0)  # v, w set to zero
 
 
-def data_profile(spat_df, con_tc=None, **kwargs):
+def data_profile(spat_df, con_tc=None, warn_datacon=True, **kwargs):
     """Mean wind speed interpolated from a TimeConstraint object.
 
     See the Examples and/or Reference Guide for details on the interpolator logic or for
     how to construct a TimeConstraint object.
+
+    Note! If a component is requested for which there is no constraint, then this
+    function will try to use the IEC spectra instead. Use the `warn_datacon` option to 
+    disable the warning about this.
 
     Parameters
     ----------
@@ -87,6 +93,9 @@ def data_profile(spat_df, con_tc=None, **kwargs):
     con_tc : pyconturb.TimeConstraint
         [-] Constraint object. Must have correct format; see documentation on
         PyConTurb's TimeConstraint object for more details.
+    warn_datacon : boolean
+        [-] Warn if a requested component does not have a constraint, which results in
+        an attempt at using the Kaimal spectrum. Default is True.
     **kwargs
         Unused (optional) keyword arguments.
 
@@ -97,6 +106,13 @@ def data_profile(spat_df, con_tc=None, **kwargs):
     """
     if con_tc is None:
         raise ValueError('No data provided!')
+    u_mask = np.isclose(con_tc.loc['k'], 0)  # cols spat_df that correspond to u
+    if not sum(u_mask):
+        if warn_datacon:  # throw warning if requested
+            warnings.warn('Longitudinal wind speed does not exist in constraints! '
+                          + 'Cannot interpolate mean profile. Trying to use power law.',
+                          Warning, stacklevel=2)
+        return power_profile(spat_df, **kwargs)
     ypts = con_tc.filter(regex='u_').loc['y'].values.astype(float)
     zpts = con_tc.filter(regex='u_').loc['z'].values.astype(float)
     vals = con_tc.get_time().filter(regex='u_').mean().values.astype(float)

@@ -74,9 +74,27 @@ def test_data_sig():
     np.testing.assert_allclose(sig_theo, sig_arr)
 
 
+def test_data_sig_nocon():
+    """verify 1) a warning is raised and 2) fxn returns iec for comps with no con"""
+    # given
+    u_ref = 10
+    k, y, z = np.repeat(range(3), 3), np.zeros(9, dtype=int), np.tile([40, 70, 100], 3)
+    spat_df = pd.DataFrame([k, np.zeros(9), y, z], index=_spat_rownames)
+    con_tc = TimeConstraint([[0, 0, 1, 1], [0, 0, 0, 0], [0, 0, 0, 0],
+                              [50, 90, 50, 90], [0, 0, 0, 0], [1, 2, 3, 4]],
+                            index=['k', 'x', 'y', 'z', 0.0, 1.0])
+    sig_theo = [0.5, 0.75, 1., 1.5, 1.75, 2., 1.048, 1.048, 1.048]
+    # when
+    with pytest.warns(Warning):
+        sig_arr = data_sig(spat_df, con_tc, u_ref=u_ref)
+    # then
+    np.testing.assert_allclose(sig_theo, sig_arr)
+
+
 if __name__ == '__main__':
     test_get_sig_custom()
     test_get_sig_iec()
     test_iec_sig_bad_tclass()
     test_iec_sig_value()
     test_data_sig()
+    test_data_sig_nocon()

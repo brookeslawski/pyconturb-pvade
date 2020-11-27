@@ -4,6 +4,7 @@
 
 import numpy as np
 import pandas as pd
+import pytest
 
 from pyconturb import TimeConstraint, gen_spat_grid
 from pyconturb.wind_profiles import constant_profile, power_profile, get_wsp_values, \
@@ -78,9 +79,25 @@ def test_data_profile():
     np.testing.assert_allclose(u_theo, wsp_prof)
 
 
+def test_data_profile_nocon():
+    """verify (1) warning is raised with no con in u (2) iec is returned"""
+    # given
+    u_ref, z_ref = 10, 70
+    spat_df = gen_spat_grid(0, [40, 70, 100], comps=[0])
+    con_tc = TimeConstraint([[1, 1], [0, 0], [0, 0], [50, 90], [8, 10]],
+                            index=['k', 'x', 'y', 'z', 0.0],
+                            columns=['v_p0', 'v_p1'])
+    u_theo = 10*(np.array([40, 70, 100])/70)**0.2  # default to iec theory
+    # when
+    with pytest.warns(Warning):
+        wsp_prof = data_profile(spat_df, con_tc, u_ref=u_ref, z_ref=z_ref)
+    # then
+    np.testing.assert_allclose(u_theo, wsp_prof)
+
 if __name__ == '__main__':
     test_get_mean_wsp_custom()
     test_get_mean_wsp_pwr()
     test_power_profile()
     test_constant_profile()
     test_data_profile()
+    test_data_profile_nocon()
