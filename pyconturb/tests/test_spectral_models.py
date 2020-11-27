@@ -1,13 +1,18 @@
 # -*- coding: utf-8 -*-
 """Test functions for power spectra
 """
-
 import numpy as np
 import pandas as pd
+import pytest
 
 from pyconturb import TimeConstraint
 from pyconturb.spectral_models import kaimal_spectrum, get_spec_values, data_spectrum
 from pyconturb._utils import _spat_rownames
+
+su_0p5 = 0.0676126976  # theoretical Su(0.5 Hz) for Kaimal, u_ref = 10, z > 60
+sv_0p5 = 0.1210076452  # Sv(0.5) for Kaimal, u_ref = 10, z > 60
+su_2p0 = 0.0068066176  # Su(2.0) for Kaimal, u_ref = 10, z > 60
+sv_2p0 = 0.0124465662  # Sv(2.0) for Kaimal, u_ref = 10, z > 60
 
 
 def test_get_spec_values_custom():
@@ -29,8 +34,8 @@ def test_get_spec_values_kaimal():
     # given
     spat_df = pd.DataFrame([[0, 1], [0, 0], [0, 0], [50, 70]], index=_spat_rownames)
     f, u_ref = [0.5, 2.0], 10
-    s_theory = np.array([[0.0676126976, 0.1210076452],  # s_u(0.5), s_v(0.5))
-                         [0.0068066176, 0.0124465662]])  # s_u(2.0), s_v(2.0))
+    s_theory = np.array([[su_0p5, sv_0p5],  # s_u(0.5), s_v(0.5))
+                         [su_2p0, sv_2p0]])  # s_u(2.0), s_v(2.0))
     spc_func = kaimal_spectrum
     # when
     spc_np = get_spec_values(f, spat_df, spc_func, u_ref=u_ref)
@@ -44,8 +49,8 @@ def test_kaimal_spectrum_value():
     spat_df = pd.DataFrame([[0, 1], [0, 0], [0, 0], [50, 70]], index=_spat_rownames)
     f = [0.5, 2.0]
     kwargs = {'u_ref': 10}
-    s_theory = np.array([[0.0676126976, 0.1210076452],  # s_u(0.5), s_v(0.5))
-                         [0.0068066176, 0.0124465662]])  # s_u(2.0), s_v(2.0))
+    s_theory = np.array([[su_0p5, sv_0p5],  # s_u(0.5), s_v(0.5))
+                         [su_2p0, sv_2p0]])  # s_u(2.0), s_v(2.0))
     # when (check input: series and np.array)
     spc_np1 = kaimal_spectrum(f, spat_df, **kwargs)
     spc_np2 = kaimal_spectrum(f, spat_df, **kwargs)
@@ -92,9 +97,28 @@ def test_data_spectrum_nolabels():
     np.testing.assert_array_almost_equal(spec, spec_theo)
 
 
+def test_data_spectrum_missingcon():
+    """Test (1) spectra with no constraint are zero (2) a warning is raised"""
+    # given
+    f, u_ref = 0.5, 10
+    spat_df = pd.DataFrame([[0, 0, 1, 1, 2, 2], [0, 0, 0, 0, 0, 0], [0, 0, 0, 0, 0, 0],
+                            [60, 70, 60, 70, 60, 70]], index=['k', 'x', 'y', 'z'])
+    con_tc = TimeConstraint([[0, 0, 2, 2], [0, 0, 0, 0], [0, 0, 0, 0],
+                              [50, 90, 50, 90],
+                              [0, 0, 0, 0], [1, 2, 3, 4]],
+                            index=['k', 'x', 'y', 'z', 0.0, 1.0])
+    spec_theo = np.array([[1.75, 2.5, sv_0p5, sv_0p5, 10.75, 12.5]])  # 1x6 array of theory
+    # when
+    with pytest.warns(Warning):
+        spec_arr = data_spectrum(f, spat_df, con_tc=con_tc, u_ref=u_ref)
+    # then
+    np.testing.assert_array_almost_equal(spec_theo, spec_arr)
+
+
 if __name__ == '__main__':
     test_get_spec_values_custom()
     test_get_spec_values_kaimal()
     test_kaimal_spectrum_value()
     test_data_spectrum()
     test_data_spectrum_nolabels()
+    test_data_spectrum_missingcon()

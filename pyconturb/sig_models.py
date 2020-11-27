@@ -4,6 +4,8 @@
 You can either use the built-in models (see below) or create your own function
 to model the spatial variation of the turbulence standard deviation.
 """
+import warnings
+
 import numpy as np
 
 from pyconturb._utils import _DEF_KWARGS, interpolator
@@ -41,12 +43,16 @@ def get_sig_values(spat_df, sig_func, **kwargs):
     return sig_func(spat_df, **kwargs)
 
 
-def data_sig(spat_df, con_tc=None, **kwargs):
+def data_sig(spat_df, con_tc=None, warn_datacon=True, **kwargs):
     """Turbulence standard deviation interpolated from a TimeConstraint object.
 
     See the Examples and/or Reference Guide for details on the interpolator logic or for
     how to construct a TimeConstraint object. Note that this function uses the
     biased estimator for the standard deviation (i.e., NumPy's default ``np.std``).
+
+    Note! If a component is requested for which there is no constraint, then this
+    function will  try to use iec_sig instead. Use the `warn_datacon` option to 
+    disable the warning about this.
 
     Parameters
     ----------
@@ -58,6 +64,9 @@ def data_sig(spat_df, con_tc=None, **kwargs):
     con_tc : pyconturb.TimeConstraint
         [-] Constraint object. Must have correct format; see documentation on
         PyConTurb's TimeConstraint object for more details.
+    warn_datacon : boolean
+        [-] Warn if a requested component does not have a constraint, which results in
+        an attempt at using IEC values. Default is True.
     **kwargs
         Unused (optional) keyword arguments.
 
@@ -73,6 +82,14 @@ def data_sig(spat_df, con_tc=None, **kwargs):
     out_array = np.empty_like(y, dtype=float)
     for kval in np.unique(k):  # loop over passed-in components
         out_mask = np.isclose(k, kval)
+        # make sure that kval is in con_tc
+        if not np.any(np.isclose(kval, con_tc.loc['k'])):
+            if warn_datacon:  # throw warning if requested
+                warnings.warn(f'Requested component "{kval}" does not exist in constraints! '
+                              + 'Cannot interpolate sig. Setting to zero.',
+                              Warning, stacklevel=2)
+            out_array[out_mask] = iec_sig(spat_df.iloc[:, out_mask], **kwargs)
+            continue
         con_mask = (con_tc.loc['k'] == kval).values
         ypts = con_tc.iloc[2, con_mask].values.astype(float)
         zpts = con_tc.iloc[3, con_mask].values.astype(float)

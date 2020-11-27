@@ -6,6 +6,8 @@ Note that these spectra are continuous, one-sided spectra. The conversion from
 continuous to discrete spectra and scaling to the appropriate variance is done
 during simulation.
 """
+import warnings
+
 import numpy as np
 
 from pyconturb._utils import _DEF_KWARGS, interpolator
@@ -47,12 +49,16 @@ def get_spec_values(f, spat_df, spec_func, **kwargs):
     return spec_func(f, spat_df, **kwargs)
 
 
-def data_spectrum(f, spat_df, con_tc=None, **kwargs):
+def data_spectrum(f, spat_df, con_tc=None, warn_datacon=True, **kwargs):
     """Power spectrum interpolated from a TimeConstraint object.
 
     See the Examples and/or Reference Guide for details on the interpolator logic or for
     how to construct a TimeConstraint object. Note that this function can only return
     frequency values as defined by T, dt in ``con_tc``.
+
+    Note! If a component is requested for which there is no constraint, then this
+    function will try to use the IEC spectra instead. Use the `warn_datacon` option to 
+    disable the warning about this.
 
     Parameters
     ----------
@@ -66,6 +72,9 @@ def data_spectrum(f, spat_df, con_tc=None, **kwargs):
     con_tc : pyconturb.TimeConstraint
         [-] Constraint object. Must have correct format; see documentation on
         PyConTurb's TimeConstraint object for more details.
+    warn_datacon : boolean
+        [-] Warn if a requested component does not have a constraint, which results in
+        an attempt at using the Kaimal spectrum. Default is True.
     **kwargs
         Unused (optional) keyword arguments.
 
@@ -82,11 +91,18 @@ def data_spectrum(f, spat_df, con_tc=None, **kwargs):
     df, nt = 1 / (time_df.index[-1] + time_df.index[1]), time_df.shape[0]
     f_reqs = np.array(f, ndmin=1)
     k, y, z = spat_df.loc[['k', 'y', 'z']].values
-    # y, z = np.array(y, ndmin=1, dtype=float), np.array(z, ndmin=1, dtype=float)
     # initialize spectral values
     spec_values = np.empty((f_reqs.size, y.size), dtype=float)
     for kval in np.unique(k):  # loop over the unique requested k values
         spec_mask = np.isclose(k, kval)  # cols in spec_values corr. to this kval
+        # make sure that kval is in con_tc
+        if not np.any(np.isclose(kval, con_tc.loc['k'])):
+            if warn_datacon:  # throw warning if requested
+                warnings.warn(f'Requested component "{kval}" does not exist in constraints! '
+                              + 'Cannot interpolate spectra. Trying to use Kaimal instead.',
+                              Warning, stacklevel=2)
+            spec_values[:, spec_mask] = kaimal_spectrum(f, spat_df.iloc[:, spec_mask], **kwargs)
+            continue
         con_mask = (con_tc.loc['k'] == kval).values
         ypts = con_tc.iloc[2, con_mask].values.astype(float)
         zpts = con_tc.iloc[3, con_mask].values.astype(float)
