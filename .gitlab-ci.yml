@@ -46,8 +46,7 @@ upload_pypi:
     - twine upload dist/* -u __token__ -p ${PYPI_PCT_TOKEN}
   tags:  # only runners with this tag can do the job [3]
     - python
-  only:  # only on tagged master
-    - master
+  only:  # only on tags
     - tags
  
 ## ===== Check code style =====

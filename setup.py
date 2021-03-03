@@ -9,8 +9,9 @@ from setuptools import setup
 
 def get_version():
     """Get version number from text file"""
-    version = open('./pyconturb/_version.py').read().splitlines()[-1]
-    return version
+    lines = open('./pyconturb/_version.py').readlines()
+    version = [l for l in lines if '__version__' in l][0].split()[-1]
+    return version.strip('"').strip("'")
 
 
 def load_readme():
