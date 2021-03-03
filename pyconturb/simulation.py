@@ -9,6 +9,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import scipy
 
 from pyconturb.coherence import get_coh_mat
 from pyconturb.core import TimeConstraint
@@ -169,7 +170,8 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
                      all_mags[i_f].reshape(1, -1)) * coh_mat  # ns x ns
 
             # get cholesky decomposition of sigma matrix
-            cor_mat = np.linalg.cholesky(sigma)
+            cor_mat = scipy.linalg.cholesky(sigma, overwrite_a=True, check_finite=False,
+                                            lower=True)
 
             # if constraints, assign data unc_pha
             if constrained:
