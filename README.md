@@ -16,3 +16,7 @@ the Veers simulation method.
 ## Installation, Examples, Bug Reporting and More
 
 Please see the [documentation website](https://pyconturb.pages.windenergy.dtu.dk/pyconturb/).
+
+## Source Code
+
+The source code is available on GitLab: https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb

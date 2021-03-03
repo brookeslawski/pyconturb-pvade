@@ -3,14 +3,29 @@
 
 See README.md for how to use this file.
 """
+from os import path
 from setuptools import setup
 
-exec(open('pyconturb/_version.py').read())  # get version and release
+
+def get_version():
+    """Get version number from text file"""
+    version = open('./pyconturb/_version.py').read().splitlines()[-1]
+    return version
+
+
+def load_readme():
+    """Load readme to put into pypi long description"""
+    this_directory = path.abspath(path.dirname(__file__))
+    with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+        long_description = f.read()
+    return long_description
 
 
 setup(name='pyconturb',
-      version=__version__,
+      version=get_version(),
       description='An open-source constrained turbulence generator',
+      long_description=load_readme(),
+      long_description_content_type='text/markdown',
       url='https://gitlab.windenergy.dtu.dk/rink/pyconturb',
       author='Jenni Rinker',
       author_email='rink@dtu.dk',

@@ -1,17 +1,16 @@
 # ===== TEST linux=====
 test_pyconturb:  # name the job what we like
   image: rinkdtu/dockermini:latest
-  #image: python:3.6-slim
   stage:  # build, test, deploy defined by default [2]
     test
   script:  # install dev options, then code, then run tests and do coverage report
-  - pip install -r dev_reqs.txt
-  - pip install -e .
-  - python -m pytest -m "not skipci" --cov-report term-missing:skip-covered --cov=pyconturb --cov-config .coveragerc
+    - pip install -r dev_reqs.txt
+    - pip install -e .
+    - python -m pytest -m "not skipci" --cov-report term-missing:skip-covered --cov=pyconturb --cov-config .coveragerc
   except:  # don't run on these branches
-  - update_docs
+    - update_docs
   tags:  # only runners with this tag can do the job [3]
-  - python
+    - python
 
 # ===== build documentation =====
 pages:  # "pages" is a job specifically for GitLab pages [1]
@@ -19,23 +18,38 @@ pages:  # "pages" is a job specifically for GitLab pages [1]
   stage:  # build, test, deploy defined by default [2]
     deploy
   before_script:  # make sure make and pandoc are installed
-  - apt-get update
-  - apt-get install --reinstall make
-  - apt-get install -y pandoc
+    - apt-get update
+    - apt-get install --reinstall make
+    - apt-get install -y pandoc
   script:  # use sphinx to build docs, move to public page
-  - pip install -r dev_reqs.txt
-  - pip install -e .
-  - cd docs; make html
-  - cd ../; mv docs/build/html public/
+    - pip install -r dev_reqs.txt
+    - pip install -e .
+    - cd docs; make html
+    - cd ../; mv docs/build/html public/
   artifacts:  # required for GitLab pages [1]
     paths:
     - public
   only:  # only run for these branches
   - master
   - update_docs
+#  tags:  # only runners with this tag can do the job [3]
+#  - python
+ 
+# ===== on tagged master, build package and push to pypi =====
+upload_pypi:
+  image: python:latest
+  stage:  # build, test, deploy defined by default [2]
+    deploy
+  script:  # get version from tag, upload to pypi
+    - pip install twine
+    - python setup.py sdist bdist_wheel
+    - twine upload dist/* -u __token__ -p ${PYPI_PCT_TOKEN}
   tags:  # only runners with this tag can do the job [3]
-  - python
-  
+    - python
+  only:  # only on tagged master
+    - master
+    - tags
+ 
 ## ===== Check code style =====
 #check_code_style:  # name the job what we like
 #  image: continuumio/anaconda3:latest
