@@ -22,7 +22,8 @@ from pyconturb._utils import (combine_spat_con, _spat_rownames, _DEF_KWARGS,
 
 def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
              wsp_func=None, sig_func=None, spec_func=None,
-             interp_data='none', seed=None, nf_chunk=1, verbose=False, **kwargs):
+             interp_data='none', seed=None, nf_chunk=1, dtype=np.float64, verbose=False,
+             **kwargs):
     """Generate a turbulence box (constrained or unconstrained).
 
     Parameters
@@ -65,6 +66,9 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         may benefit from larger values for ``nf_chunk``. Default is 1.
     verbose : bool, optional
         Print extra information during turbulence generation. Default is False.
+    dtype : data type, optional
+        Change precision of calculation (np.float32 or np.float64). Will reduce the 
+        storage, and might slightly reduce the computational time. Default is np.float64.
     **kwargs
         Optional keyword arguments to be fed into the
         spectral/turbulence/profile/etc. models.
@@ -89,6 +93,8 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         print('All simulation points collocated with constraints! '
               + 'Nothing to simulate.')
         return None
+
+    dtype_complex=np.complex64 if dtype==np.float32 else np.complex128  # complex dtype
 
     # add T, dt, con_tc to kwargs
     kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'dt': dt, 'con_tc': con_tc}
@@ -128,6 +134,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         all_mags = np.concatenate((con_mags, sim_mags), axis=1)  # con and sim
     else:
         all_mags = sim_mags  # just sim
+    all_mags = all_mags.astype(dtype, copy=False)
 
     # get uncorrelated phasors for simulation
     np.random.seed(seed=seed)  # initialize random number generator
@@ -141,7 +148,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
 
     # if more than one point, correlate everything
     else:
-        turb_fft = np.zeros((n_f, n_s), dtype=complex)
+        turb_fft = np.zeros((n_f, n_s), dtype=dtype_complex)
         n_chunks = int(np.ceil(freq.size / nf_chunk))
 
         # loop through frequencies
@@ -153,7 +160,8 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
                 all_coh_mat = get_coh_mat(freq[i_chunk * nf_chunk:
                                                (i_chunk + 1) * nf_chunk],
                                           all_spat_df, coh_model=coh_model,
-                                          **kwargs)  # nf x ns x ns
+                                          dtype=dtype,
+                                          **kwargs)
 
             # assemble "sigma" matrix, which is coh matrix times mag arrays
             coh_mat = all_coh_mat[i_f % nf_chunk]  # ns x ns
@@ -178,6 +186,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
 
     # convert to time domain and pandas dataframe
     turb_arr = np.fft.irfft(turb_fft, axis=0, n=n_t) * n_t
+    turb_arr = turb_arr.astype(dtype, copy=False)
     turb_df = pd.DataFrame(turb_arr, columns=all_spat_df.columns, index=t)
 
     # return just the desired simulation points
