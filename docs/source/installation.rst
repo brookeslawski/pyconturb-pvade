@@ -1,10 +1,10 @@
 .. _installation:
 
-
 Installation
 ===========================
 
-Before you can install the package, you need to have a suitable Python package
+
+Before you can install the package, you need to have a suitable Python environment
 installed. If you don't have Python, follow these instructions before attempting
 to install PyConTurb.
 
@@ -17,45 +17,39 @@ to install PyConTurb.
 Requirements
 --------------------------------
 
-PyConTurb requires Python 3.6+, so be sure that you are installing it into
-a suitable environment (see above). For simple users, all dependencies will be
-installed with PyConTurb, except for two optional packages for running the
-examples and plotting. For developers, use the ``dev_reqs.txt`` requirements file
-to install the optional dependencies related to testing and building documentation.
+PyConTurb requires Python 3.6+. All other dependencies are installed during
+installation.
+
+Optional packages to, e.g., run the example notebooks or develop the package
+can also be installed. See instructions below.
 
 
 Normal user
 --------------------------------
 
-* Install the most recent version of the code::
+We generally recommend installing PyConTurb into its own environment. Instructions
+are provided :ref:`above <install_python>`.
+
+* Install the most recent, stable version of the code::
   
-    pip install git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git
+    pip install pyconturb
 
 * Update an installation to the most recent version::
 
-    pip install --upgrade git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git
+    pip install --upgrade pyconturb
 
-* To run the notebook examples on your machine (optional)::
+* Install a specific version on PyPI::
+
+   pip install pyconturb==2.6.3
+
+* (Optional) Install packages to run the notebook examples on your machine::
 
     pip install jupyter matplotlib
 
-* To install based off a particular tag (e.g., ``v2.0``), branch
-  (e.g., ``master``) or commit hash (e.g., ``1ea5060453ee9ce26b265065333dd1d370b3e8b6``)::
-  
-    pip install git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git@v2.0
-    pip install git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git@master
-    pip install git+https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git@1ea5060453ee9ce26b265065333dd1d370b3e8b6
 
+Advanced user
+--------------------------------
 
-Developer
-------------------------------
+Please see the installation instructions in the
+:ref:`Developer corner <developer_corner>`.
 
-We highly recommend developers install PyConTurb into its own environment
-(instructions above). The commands to clone and install PyConTurb with developer
-options into the current active environment in an Anaconda Prompt are as
-follows::
-
-   git clone https://gitlab.windenergy.dtu.dk/pyconturb/pyconturb.git
-   cd PyConTurb
-   pip install -r dev_reqs.txt
-   pip install -e .

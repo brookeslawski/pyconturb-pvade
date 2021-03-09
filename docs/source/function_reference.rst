@@ -1,9 +1,9 @@
-.. _reference_guide:
+.. _common_functions:
 
-Reference guide
+Function reference
 ===========================
 
-Here is some more information on PyConTurb's most useful functionalities.
+Here is information on PyConTurb's most useful functionalities.
 
 
 Contents:

@@ -1,7 +1,7 @@
-.. _install-python:
+.. _install_python:
 
 Install Python
-==============
+--------------------------------
 
     For all platforms we recommend that you download and install Anaconda: 
     a professional-grade, full-blown scientific Python distribution.
@@ -20,12 +20,12 @@ Install Python
             ``>> activate``
             
 Create environment
-===================
+--------------------------------
 
     If you have other Python programs besides PyConTurb, it is a good idea to install
     each program in its own environment to ensure that the dependencies for the
     different packages do not conflict with one another. The commands to create and
     then activate an environment in an Anaconda prompt are::
     
-       conda create --name pyconturb python=3.6
+       conda create --name pyconturb python=3.7
        activate pyconturb

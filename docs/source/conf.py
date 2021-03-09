@@ -12,6 +12,7 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
+from datetime import date
 import os
 import sys
 sys.path.insert(0, os.path.join(os.path.abspath('.'), '..', '..'))  # repo
@@ -22,7 +23,7 @@ from pyconturb._version import __version__
 # -- Project information -----------------------------------------------------
 
 project = 'PyConTurb'
-copyright = '2019, Jenni Rinker (DTU Wind Energy)'
+copyright = f'{date.today().year}, Jenni Rinker (DTU Wind Energy)'
 author = 'Jenni Rinker'
 
 # The short X.Y version

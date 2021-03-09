@@ -8,9 +8,9 @@ Here are a few jupyter notebooks to demonstrate the code.
 
 To run a notebook on your machine :
    1. If you don't have the source code locally, use git to clone the repo.
-      (See :ref:`developer install instructions <installation>` for cloning.)
+      (See :ref:`developer install instructions <developer_corner>` for cloning.)
    2. Make sure you have jupyter and matplotlib installed (instructions 
-      :ref:`here <installation>`.)
+      :ref:`here <getting_started>`.)
    3. In an Anaconda prompt, change to the directory with the notebooks and  
       enter ``jupyter notebook``.  
    4. Your default internet browser should open and show your current directory  
