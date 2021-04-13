@@ -23,7 +23,7 @@ def test_iec_turb_mn_std_dev():
     # given
     y, z = 0, [70, 80]
     spat_df = gen_spat_grid(y, z)
-    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300, 'dt': 1}
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300, 'nt': 300}
     sig_theo = np.array([1.834, 1.4672, 0.917, 1.834, 1.4672, 0.917])
     u_theo = np.array([10, 0, 0, 10.27066087, 0, 0])
     # when
@@ -39,7 +39,7 @@ def test_gen_turb_con():
     # given -- constraining points
     con_spat_df = pd.DataFrame([[0, 0, 0, 70]], columns=_spat_rownames).T
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
-              'dt': 0.5, 'seed': 1337}
+              'nt': 600, 'seed': 1337}
     coh_model = 'iec'
     con_turb_df = gen_turb(con_spat_df, coh_model=coh_model, **kwargs)
     con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df.T,
@@ -71,7 +71,7 @@ def test_gen_turb_error_con_data():
     y, z = 0, [70, 80]
     spat_df = gen_spat_grid(y, z)
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 75, 'T': 2,
-              'dt': 1, 'con_data': con_data}
+              'nt': 2, 'con_data': con_data}
     # when and then
     with pytest.raises(ValueError):
         gen_turb(spat_df, **kwargs)
@@ -83,7 +83,7 @@ def test_gen_turb_bad_interp():
     y, z = 0, [70, 80]
     spat_df = gen_spat_grid(y, z)
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 75, 'T': 2,
-              'dt': 1}
+              'nt': 2}
     con_spat_df = pd.DataFrame([[0, 0, 0, 0, 75]],
                                columns=['k', 'p_id', 'x', 'y', 'z'])
     con_turb_df = pd.DataFrame([[0], [1]], index=[9, 11], columns=['u_p0'])
@@ -102,7 +102,7 @@ def test_gen_turb_bad_con_tc():
     y, z = 0, [70, 80]
     spat_df = gen_spat_grid(y, z)
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 75, 'T': 1,
-              'dt': 0.5}
+              'nt': 2}
     con_spat_df = pd.DataFrame([[0, 0, 0, 0, 75]],
                                columns=['k', 'p_id', 'x', 'y', 'z'])
     con_turb_df = pd.DataFrame([[9], [11]], index=[0, 5], columns=['u_p0'])
@@ -133,7 +133,7 @@ def test_gen_turb_sig_func():
                            index=_spat_rownames, columns=['u_p0', 'v_p0', 'w_p0'])
     sig_theory = np.array([1, 1, 1])
     sig_func = lambda spat_df, **kwargs: np.ones_like(spat_df.loc['y'])  # constant std dev
-    kwargs = {'u_ref': 10, 'T': 1, 'dt': 0.25}
+    kwargs = {'u_ref': 10, 'T': 1, 'nt': 4}
     # when
     turb = gen_turb(spat_df, sig_func=sig_func, **kwargs)
     sig_vals = np.std(turb, axis=0, ddof=1)
@@ -151,7 +151,7 @@ def test_gen_turb_spec_func():
         """square of arange should make magnitudes proceed linearly"""
         return np.tile(np.arange(f.size)**2, (spat_df.shape[1], 1)).T  # tile to match n_inp
     normmag_theory = np.tile(np.linspace(0, 1, 3), (spat_df.shape[1], 1)).T
-    kwargs = {'u_ref': 10, 'T': 1, 'dt': 0.25}
+    kwargs = {'u_ref': 10, 'T': 1, 'nt': 4}
     # when
     turb = gen_turb(spat_df, spec_func=spec_func, **kwargs)
     mags = np.abs(np.fft.rfft(turb.values, axis=0)) / 2  # n_t = 2
@@ -165,7 +165,7 @@ def test_gen_turb_verbose():
     """make sure the verbose option doesn't break anything"""
     # given
     spat_df = pd.DataFrame(np.ones((4, 1)), index=_spat_rownames)
-    kwargs = {'u_ref': 10, 'T': 1, 'dt': 0.5, 'verbose': True}
+    kwargs = {'u_ref': 10, 'T': 1, 'nt': 2, 'verbose': True}
     # when
     gen_turb(spat_df, **kwargs)
     # then
@@ -177,7 +177,7 @@ def test_gen_turb_sims_collocated():
     # given -- constraining points
     con_spat_df = pd.DataFrame([[0, 0, 0, 70]], columns=_spat_rownames).T
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
-              'dt': 0.5, 'seed': 1337}
+              'nt': 600, 'seed': 1337}
     coh_model = 'iec'
     con_turb_df = gen_turb(con_spat_df, coh_model=coh_model, **kwargs)
     con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df.T, con_turb_df=con_turb_df)
@@ -187,6 +187,18 @@ def test_gen_turb_sims_collocated():
     sim_turb_df = gen_turb(spat_df, con_tc=con_tc, coh_model=coh_model, **kwargs)
     # then (std dev, mean, and regen'd time series should be close; right colnames)
     assert sim_turb_df is None
+
+
+def test_gen_turb_warning_dt():
+    """Should warn if dt given in kwarg"""
+    # given
+    y, z = 0, [70, 80]
+    spat_df = gen_spat_grid(y, z)
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 75, 'T': 2,
+              'dt': 1}
+    # when and then
+    with pytest.warns(DeprecationWarning):
+        gen_turb(spat_df, **kwargs)
 
 
 if __name__ == '__main__':
@@ -199,3 +211,4 @@ if __name__ == '__main__':
     test_gen_turb_sig_func()
     test_gen_turb_spec_func()
     test_gen_turb_sims_collocated()
+    test_gen_turb_warning_dt()

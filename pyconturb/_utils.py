@@ -103,9 +103,8 @@ def gen_spat_grid(y, z, comps=[0, 1, 2]):
 
 def get_freq(**kwargs):
     """get frequency array"""
-    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))
-    t = np.arange(n_t) * kwargs['dt']
-    n_f = n_t // 2 + 1
+    t = np.arange(kwargs['nt']) * kwargs['T'] / kwargs['nt']
+    n_f = kwargs['nt'] // 2 + 1
     freq = np.arange(n_f) / kwargs['T']
     return t, freq
 
@@ -189,9 +188,9 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
         f'{-z_ref:.1f} ; hub height\n'
 
     # string for mann model block
-    T, dt = kwargs['T'], kwargs['dt']
+    T, nt = kwargs['T'], kwargs['nt']
     y, z = set(spat_df.loc['y'].values), set(spat_df.loc['z'].values)
-    n_x, du = int(np.ceil(T / dt)), dt * kwargs['u_ref']
+    n_x, du = nt, kwargs['u_ref'] * T / nt
     n_y, dv = len(y), (max(y) - min(y)) / (len(y) - 1)
     n_z, dw = len(z), (max(z) - min(z)) / (len(z) - 1)
     str_mann = '  begin mann ;\n' + \

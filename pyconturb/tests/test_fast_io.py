@@ -14,6 +14,7 @@ from pyconturb.simulation import gen_turb
 from pyconturb._utils import gen_spat_grid
 
 
+
 @pytest.mark.openfast
 @pytest.mark.skipci  # don't run in CI
 def test_binary_thru_fast7():
@@ -21,12 +22,16 @@ def test_binary_thru_fast7():
     """
     # turbulence inputs
     z_hub, l_blade = 60.2031, 25  # hub height, blade length
-    y = [-l_blade, 0, l_blade]  # x-components of turb grid
-    z = [z_hub - l_blade, z_hub, z_hub + l_blade]  # z-components of turb grid
+    y = [-2*l_blade, -l_blade, 0, l_blade]  # x-components of turb grid (offset to check loading)
+    z = [z_hub - l_blade, z_hub, z_hub + l_blade]  # z-components of turb grid (offset to check loading)
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2,
-              'z_ref': z_hub, 'T': 20, 'dt': 0.5}
+              'z_ref': z_hub, 'T': 20, 'nt': 40}
     coh_model = 'iec'
     spat_df = gen_spat_grid(y, z)
+    
+    # get the pyconturb index of the hub-height point
+    hh_pts = spat_df.loc[:,(spat_df.loc['y'] == 0) & np.isclose(spat_df.loc['z'], z_hub)]
+    hh_idx = hh_pts.filter(regex='u_').columns[0].lstrip('u')
     
     # paths, directories, and file names
     test_dir = os.path.dirname(__file__)  # test directory
@@ -41,7 +46,7 @@ def test_binary_thru_fast7():
     
     # 1. generate turbulence files and save to bts
     orig_df = gen_turb(spat_df, coh_model=coh_model,
-                       **kwargs)
+                        **kwargs)
     df_to_bts(orig_df, spat_df, bts_path)
     
     # 2. run FAST on htc file
@@ -59,12 +64,12 @@ def test_binary_thru_fast7():
     
     # 4. check results are equal
     for i, c in enumerate('uvw'):
-        np.testing.assert_allclose(orig_df[f'{c}_p4'], bts_df[f'{c}_p4'], rtol=np.inf,
-                                   atol=1e-5)
+        np.testing.assert_allclose(orig_df[c + hh_idx], bts_df[c + hh_idx], rtol=np.inf,
+                                    atol=1e-5)
         # pd.testing.assert_series_equal(orig_df[f'{c}_p4'], bts_df[f'{c}_p4'])
-        np.testing.assert_allclose(orig_df[f'{c}_p4'].iloc[1:],
-                                   fast_df[i].iloc[:-1], rtol=np.inf, atol=1e-5)
-
+        np.testing.assert_allclose(orig_df[c + hh_idx].iloc[1:],
+                                    fast_df[i].iloc[:-1], rtol=np.inf, atol=1e-5)
+    
     # 5. clean up
     os.remove(out_path)
     os.remove(bts_path)

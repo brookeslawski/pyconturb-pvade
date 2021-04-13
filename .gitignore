@@ -5,6 +5,7 @@ junk/*
 *.bin
 pyconturb/tests/fast_sims/*
 **/tmp/*
+pyconturb/tests/_config.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

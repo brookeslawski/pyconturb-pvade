@@ -143,7 +143,7 @@ def df_to_bts(turb_df, spat_df, path, uzhub=None, periodic=True):
         # Write the data so that the first index varies fastest (F order).
         # The indexes vary in the following order:
         # component (fastest), y-index, z-index, time (slowest).
-        fl.write(np.rollaxis(out, 2, 1).tostring(order='F'))
+        fl.write(np.rollaxis(out, 2, 1).tobytes(order='F'))
 
 
 def df_to_h2turb(turb_df, spat_df, path, prefix=''):

@@ -21,7 +21,7 @@ from pyconturb._utils import (combine_spat_con, _spat_rownames, _DEF_KWARGS,
                               clean_turb, check_sims_collocated)
 
 
-def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
+def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
              wsp_func=None, sig_func=None, spec_func=None,
              interp_data='none', seed=None, nf_chunk=1, dtype=np.float64, verbose=False,
              **kwargs):
@@ -35,8 +35,8 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         turbine component (u, v or w).
     T : float, optional
         Total length of time to simulate in seconds. Default is 600.
-    dt : float, optional
-        Time step for generated turbulence in seconds. Default is 1.
+    nt : int, optional
+        Number of time steps for generated turbulence. Default is 600.
     con_tc : pyconturb TimeConstraint, optional
         Optional constraining data for the simulation. The TimeConstraint object is built
         into PyConTurb; see documentation for more details.
@@ -82,10 +82,16 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     """
     if verbose:
         print('Beginning turbulence simulation...')
-    # if con_data passed in, throw deprecation warning
+    # if con_data passed in, throw error
     if 'con_data' in kwargs:
         raise ValueError('The "con_data" option is deprecated and can no longer be used.'
                          ' Please see documentation for updated usage.')
+    # if dt passed in, throw deprecation warning
+    if 'dt' in kwargs:
+        warnings.warn('The "dt" keyword argument is deprecated and will be removed in '
+                      + 'future releases. Please use the "nt" argument instead.',
+                      DeprecationWarning)
+        nt = int(np.ceil(T / kwargs['dt']))  # no. time steps
     # if asked to interpret but no data, throw warning
     if (((interp_data == 'all') or isinstance(interp_data, list)) and (con_tc is None)):
         raise ValueError('If "interp_data" is not "none", constraints must be given!')
@@ -97,14 +103,13 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
 
     dtype_complex=np.complex64 if dtype==np.float32 else np.complex128  # complex dtype
 
-    # add T, dt, con_tc to kwargs
-    kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'dt': dt, 'con_tc': con_tc}
+    # add T, nt, con_tc to kwargs
+    kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'nt': nt, 'con_tc': con_tc}
     wsp_func, sig_func, spec_func = assign_profile_functions(wsp_func, sig_func,
                                                              spec_func, interp_data)
 
     # assign/create constraining data
-    n_t = int(np.ceil(kwargs['T'] / kwargs['dt']))  # no. time steps
-    t = np.arange(n_t) * kwargs['dt']  # time array
+    t = np.arange(nt) * T / nt  # time array
     if con_tc is None:  # create empty constraint data if not passed in
         constrained, n_d = False, 0  # no. of constraints
         con_tc = TimeConstraint(index=_spat_rownames)
@@ -123,14 +128,14 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         one_point = True
 
     # intermediate variables
-    n_f = n_t // 2 + 1  # no. freqs
+    n_f = nt // 2 + 1  # no. freqs
     freq = np.arange(n_f) / kwargs['T']  # frequency array
 
     # get magnitudes of points to simulate. (nf, nsim). con_tc in kwargs.
     sim_mags = get_magnitudes(all_spat_df.iloc[:, n_d:], spec_func, sig_func, **kwargs)
 
     if constrained:
-        conturb_fft = np.fft.rfft(con_tc.get_time().values, axis=0) / n_t  # constr fft
+        conturb_fft = np.fft.rfft(con_tc.get_time().values, axis=0) / nt  # constr fft
         con_mags = np.abs(conturb_fft)  # mags of constraints
         all_mags = np.concatenate((con_mags, sim_mags), axis=1)  # con and sim
     else:
@@ -140,7 +145,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
     # get uncorrelated phasors for simulation
     np.random.seed(seed=seed)  # initialize random number generator
     sim_unc_pha = np.exp(1j * 2*np.pi * np.random.rand(n_f, n_s - n_d))
-    if not (n_t % 2):  # if even time steps, last phase must be 0 or pi for real sig
+    if not (nt % 2):  # if even time steps, last phase must be 0 or pi for real sig
         sim_unc_pha[-1, :] = np.exp(1j * np.round(np.real(sim_unc_pha[-1, :])) * np.pi)
 
     # no coherence if one point
@@ -187,7 +192,7 @@ def gen_turb(spat_df, T=600, dt=1, con_tc=None, coh_model='iec',
         del all_coh_mat  # free up memory
 
     # convert to time domain and pandas dataframe
-    turb_arr = np.fft.irfft(turb_fft, axis=0, n=n_t) * n_t
+    turb_arr = np.fft.irfft(turb_fft, axis=0, n=nt) * nt
     turb_arr = turb_arr.astype(dtype, copy=False)
     turb_df = pd.DataFrame(turb_arr, columns=all_spat_df.columns, index=t)
 

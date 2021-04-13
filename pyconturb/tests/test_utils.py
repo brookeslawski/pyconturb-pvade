@@ -19,7 +19,7 @@ def test_check_sims_collocated():
     # given -- constraining points
     con_arr = np.array([[0, 0, 0, 70, 1], [1, 0, 0, 70, 1], [2, 0, 0, 70, 1]]).T
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
-              'dt': 0.5, 'seed': 1337}
+              'nt': 600, 'seed': 1337}
     inp_out = [(0, 1, False), (0, 2, True)]
     # given -- points to simulate
     spat_df = pd.DataFrame([[0, 0, 0, 70],
@@ -115,8 +115,8 @@ def test_gen_spat_grid():
 def test_get_freq_values():
     """verify correct output of get_freq"""
     # given
-    kwargs = {'T': 41, 'dt': 2}
-    t_theo = np.arange(0, 42, 2)
+    kwargs = {'T': 41, 'nt': 20}
+    t_theo = np.arange(0, 20) / 20 * 41
     f_theo = np.arange(0, 11) / 41
     # when
     t_out, f_out = utils.get_freq(**kwargs)
@@ -130,7 +130,7 @@ def test_make_hawc2_input():
     # given
     turb_dir = '.'
     spat_df = utils.gen_spat_grid([-10, 10], [109, 129])
-    kwargs = {'z_ref': 119, 'T': 600, 'dt': 1, 'u_ref': 10}
+    kwargs = {'z_ref': 119, 'T': 600, 'nt': 600, 'u_ref': 10}
     str_cntr_theo = '  center_pos0             0.0 0.0 -119.0 ; hub height\n'
     str_mann_theo = ('  begin mann ;\n    filename_u ./u.bin ; \n'
                      + '    filename_v ./v.bin ; \n    filename_w ./w.bin ; \n'

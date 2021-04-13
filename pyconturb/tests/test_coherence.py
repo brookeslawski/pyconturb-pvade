@@ -112,7 +112,7 @@ def test_get_iec_coh_mat_verify_coherence():
     y, z = [0], [70, 80]
     spat_df = gen_spat_grid(y, z)
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70,
-              'T': 300, 'dt': 100, 'ed': 3}
+              'T': 300, 'nt': 3, 'ed': 3, 'dtype': np.float32}
     coh_model = 'iec'
     n_real = 1000  # number of realizations in ensemble
     coh_thresh = 0.12  # coherence threshold
@@ -124,7 +124,7 @@ def test_get_iec_coh_mat_verify_coherence():
     ii_jj = [(i, j) for (i, j) in
              itertools.combinations(np.arange(spat_df.shape[1]), 2)]  # pairwise indices
     ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]
-    turb_ens = np.empty((int(np.ceil(kwargs['T']/kwargs['dt'])),
+    turb_ens = np.empty((kwargs['nt'],
                          3 * len(y) * len(z), n_real))
     for i_real in range(n_real):
         turb_ens[:, :, i_real] = gen_turb(spat_df, coh_model=coh_model, **kwargs)
