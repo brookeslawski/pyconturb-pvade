@@ -18,7 +18,7 @@ from pyconturb.sig_models import iec_sig, data_sig
 from pyconturb.spectral_models import kaimal_spectrum, data_spectrum
 from pyconturb.wind_profiles import get_wsp_values, power_profile, data_profile
 from pyconturb._utils import (combine_spat_con, _spat_rownames, _DEF_KWARGS,
-                              clean_turb, check_sims_collocated)
+                              clean_turb, check_sims_collocated, message)
 
 
 def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
@@ -80,8 +80,8 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
         Generated turbulence box. Each row corresponds to a time step and each
         column corresponds to a point/component in ``spat_df``.
     """
-    if verbose:
-        print('Beginning turbulence simulation...')
+    message('Beginning turbulence simulation...', verbose)
+
     # if con_data passed in, throw error
     if 'con_data' in kwargs:
         raise ValueError('The "con_data" option is deprecated and can no longer be used.'
@@ -161,35 +161,30 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
         for i_f in range(1, freq.size):
             i_chunk = i_f // nf_chunk  # calculate chunk number
             if (i_f - 1) % nf_chunk == 0:  # genr cohrnc chunk when needed
-                if verbose:
-                    print(f'  Processing chunk {i_chunk + 1} / {n_chunks}')
-                all_coh_mat = get_coh_mat(freq[i_chunk * nf_chunk:
-                                               (i_chunk + 1) * nf_chunk],
-                                          all_spat_df, coh_model=coh_model,
-                                          dtype=dtype,
-                                          **kwargs)
+                message(f'  Processing chunk {i_chunk + 1} / {n_chunks}', verbose)
+                chunk_coh_mat = get_coh_mat(freq[i_chunk*nf_chunk:(i_chunk + 1)*nf_chunk],
+                                            all_spat_df, coh_model=coh_model,
+                                            dtype=dtype,
+                                            **kwargs)
 
-            # assemble "sigma" matrix, which is coh matrix times mag arrays
-            coh_mat = all_coh_mat[i_f % nf_chunk]  # ns x ns
-            sigma = (all_mags[i_f].reshape(-1, 1) *
-                     all_mags[i_f].reshape(1, -1)) * coh_mat  # ns x ns
+            # coherence array for this frequency
+            coh_mat = chunk_coh_mat[i_f % nf_chunk]  # ns x ns
 
-            # get cholesky decomposition of sigma matrix
-            cor_mat = scipy.linalg.cholesky(sigma, overwrite_a=True, check_finite=False,
-                                            lower=True)
+            # get cholesky decomposition of coherence matrix, make coherence
+            L_mat = coh_mat * all_mags[i_f]
 
             # if constraints, assign data unc_pha
             if constrained:
-                dat_unc_pha = np.linalg.solve(cor_mat[:n_d, :n_d], conturb_fft[i_f, :])
+                dat_unc_pha = np.linalg.solve(L_mat[:n_d, :n_d], conturb_fft[i_f, :])
             else:
                 dat_unc_pha = []
             unc_pha = np.concatenate((dat_unc_pha, sim_unc_pha[i_f, :]))
-            cor_pha = cor_mat @ unc_pha
+            cor_pha = L_mat @ unc_pha
 
             # calculate and save correlated Fourier components
             turb_fft[i_f, :] = cor_pha
 
-        del all_coh_mat  # free up memory
+        del chunk_coh_mat  # free up memory
 
     # convert to time domain and pandas dataframe
     turb_arr = np.fft.irfft(turb_fft, axis=0, n=nt) * nt

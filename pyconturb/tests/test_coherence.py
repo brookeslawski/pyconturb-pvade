@@ -11,6 +11,7 @@ import itertools
 import numpy as np
 import pandas as pd
 import pytest
+from scipy.linalg import cholesky
 
 from pyconturb.simulation import gen_turb
 from pyconturb.coherence import get_coh_mat
@@ -26,8 +27,9 @@ def test_get_coh_mat_default():
     spat_df = pd.DataFrame([[0, 0], [0, 0], [0, 0], [0, 1]], index=_spat_rownames, columns=['u_p0', 'u_p1'])
     freq = 1
     kwargs = {'u_ref': 1, 'l_c': 1}
-    coh_theo = np.array([[1, 5.637379774e-6],
+    cor_theo = np.array([[1, 5.637379774e-6],
                          [5.637379774e-6, 1]])
+    coh_theo = cholesky(cor_theo, check_finite=False, lower=True)
     # when
     coh_mat = get_coh_mat(freq, spat_df, **kwargs)
     coh_out = coh_mat[0]
@@ -95,6 +97,8 @@ def test_get_iec_coh_mat_value_dtype():
         for i in range(2):
             coh_theo[i, 0, 3] = np.exp(-12*np.sqrt((freq[i]/u_ref)**2+(0.12/l_c)**2))
             coh_theo[i, 3, 0] = np.exp(-12*np.sqrt((freq[i]/u_ref)**2+(0.12/l_c)**2))
+        for j in range(coh_theo.shape[0]):
+            coh_theo[j] = cholesky(coh_theo[j], check_finite=False, lower=True)
         kwargs = {'ed': 3, 'u_ref': u_ref, 'l_c': l_c, 'coh_model': coh_model}
         # when
         coh_out = get_coh_mat(freq, spat_df, dtype=dtype, **kwargs)
@@ -115,28 +119,27 @@ def test_get_iec_coh_mat_verify_coherence():
               'T': 300, 'nt': 3, 'ed': 3, 'dtype': np.float32}
     coh_model = 'iec'
     n_real = 1000  # number of realizations in ensemble
-    coh_thresh = 0.12  # coherence threshold
-    # get theoretical coherence
-    idcs = np.triu_indices(spat_df.shape[1], k=1)
+    sig_thresh = 0.12  # coherence threshold
+    # get theoretical sigma matrix
     coh_theo = get_coh_mat(1 / kwargs['T'], spat_df, coh_model=coh_model,
-                           **kwargs)[0][idcs]
+                           **kwargs)
+    sig_theo = coh_theo[0] @ coh_theo[0].T
+    n = coh_theo.shape[1]
     # when
-    ii_jj = [(i, j) for (i, j) in
-             itertools.combinations(np.arange(spat_df.shape[1]), 2)]  # pairwise indices
-    ii, jj = [tup[0] for tup in ii_jj], [tup[1] for tup in ii_jj]
-    turb_ens = np.empty((kwargs['nt'],
-                         3 * len(y) * len(z), n_real))
+    turb_ens = np.empty((kwargs['nt'], 3 * len(y) * len(z), n_real))
     for i_real in range(n_real):
         turb_ens[:, :, i_real] = gen_turb(spat_df, coh_model=coh_model, **kwargs)
     turb_fft = np.fft.rfft(turb_ens, axis=0)
+    ii, jj = np.repeat(range(n), n), np.tile(range(n), n)
     x_ii, x_jj = turb_fft[1, ii, :], turb_fft[1, jj, :]
-    coh = np.mean((x_ii * np.conj(x_jj)) /
-                  (np.sqrt(x_ii * np.conj(x_ii)) *
-                   np.sqrt(x_jj * np.conj(x_jj))),
-                  axis=-1)
-    max_coh_diff = np.abs(coh - coh_theo).max()
+    sig = (np.abs(np.mean((x_ii * np.conj(x_jj)), axis=-1)) /
+           (np.mean(np.abs(x_ii), axis=-1) *
+            np.mean(np.abs(x_jj), axis=-1))).reshape(n, n)
+    max_sig_diff = np.abs(sig - sig_theo).max()
     # then
-    assert max_coh_diff < coh_thresh
+    assert max_sig_diff < sig_thresh
+
+test_get_iec_coh_mat_verify_coherence()
 
 # ========================== tests for get_iec3d_coh_mat ==========================
 
@@ -172,6 +175,7 @@ def test_get_iec3d_coh_mat_value_dtype():
         coh_theo[4, 1] = coh_theo[1, 4]
         coh_theo[2, 5] = np.exp(-12*np.sqrt((freqs/u_ref)**2+(0.12/l_c*8.1/0.66)**2))
         coh_theo[5, 2] = coh_theo[2, 5]
+        coh_theo = cholesky(coh_theo, lower=True, check_finite=False)
         # when
         coh_mat = get_coh_mat(freqs, spat_df, dtype=dtype, **kwargs)
         coh_out = coh_mat[0]
@@ -191,10 +195,10 @@ def test_get_iec3d_coh_mat_missingkwargs():
         get_coh_mat(freq, spat_df, coh_model=coh_model, **kwargs)
 
 
-if __name__ == '__main__':
-    test_get_coh_mat_default()
-    test_get_coh_mat_badcohmodel()
-    test_get_iec_coh_mat_badedition()
-    test_get_iec_coh_mat_missingkwargs()
-    test_get_iec_coh_mat_value_dtype()
-    test_get_iec3d_coh_mat_value_dtype()    
+# if __name__ == '__main__':
+#     test_get_coh_mat_default()
+#     test_get_coh_mat_badcohmodel()
+#     test_get_iec_coh_mat_badedition()
+#     test_get_iec_coh_mat_missingkwargs()
+#     test_get_iec_coh_mat_value_dtype()
+#     test_get_iec3d_coh_mat_value_dtype()    
