@@ -217,6 +217,13 @@ def make_hawc2_input(turb_dir, spat_df, **kwargs):
     return str_cntr_pos0, str_mann, str_output
 
 
+def message(s, verbose=True):
+    """Print a message to screen, if requested.
+    """
+    print(s) if verbose else None
+    return
+
+
 def rotate_time_series(ux, uy, uz):
     """Yaw and pitch time series so v- and w-directions have zero mean
 

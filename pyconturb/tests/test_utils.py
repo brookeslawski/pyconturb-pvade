@@ -148,6 +148,28 @@ def test_make_hawc2_input():
     assert(str_output.split('\n')[1] == str_output_theo2)
 
 
+def test_message_verbose(capsys):
+    """Test that the message function works"""
+    # given
+    s = 'cat'
+    # when
+    utils.message(s, verbose=True)
+    captured = capsys.readouterr()
+    # then
+    assert captured.out == s + '\n'
+
+
+def test_message_noverbose(capsys):
+    """Test that the message function doesn't print when verbose is off"""
+    # given
+    s = 'cat'
+    # when
+    utils.message(s, verbose=False)
+    captured = capsys.readouterr()
+    # then
+    assert captured.out == ''
+
+
 def test_rotate_time_series():
     """verify time series rotation"""
     # given
