@@ -10,7 +10,7 @@ test_pyconturb:  # name the job what we like
   except:  # don't run on these branches
     - update_docs
   tags:  # only runners with this tag can do the job [3]
-    - python
+    - ellipsys
 
 # ===== build documentation =====
 pages:  # "pages" is a job specifically for GitLab pages [1]
@@ -32,8 +32,8 @@ pages:  # "pages" is a job specifically for GitLab pages [1]
   only:  # only run for these branches
   - master
   - update_docs
-#  tags:  # only runners with this tag can do the job [3]
-#  - python
+  tags:  # only runners with this tag can do the job [3]
+    - ellipsys
  
 # ===== on tagged master, build package and push to pypi =====
 upload_pypi:
@@ -45,7 +45,7 @@ upload_pypi:
     - python setup.py sdist bdist_wheel
     - twine upload dist/* -u __token__ -p ${PYPI_PCT_TOKEN}
   tags:  # only runners with this tag can do the job [3]
-    - python
+    - ellipsys
   only:  # only on tags
     - tags
  
