@@ -33,7 +33,8 @@ setup(name='pyconturb',
       license='MIT',
       packages=['pyconturb',  # top-level package
                 ],
-      install_requires=['numpy',  # numberic arrays
+      install_requires=['h5py',  # load coherence array from file
+                        'numpy',  # numberic arrays
                         'pandas',  # column-labelled arrays
                         'scipy',  # interpolating profile functions
                         ],

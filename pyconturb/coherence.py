@@ -2,31 +2,76 @@
 """Functions related to definition of coherence models
 """
 import itertools
+import os
 
+import h5py
 import numpy as np
 from scipy.linalg import cholesky
 
+from pyconturb._utils import check_chunk_idcs
 
-def get_coh_mat(freq, spat_df, coh_model='iec', dtype=np.float64, **kwargs):
-    """Create coherence matrix for given frequencies and coherence model
+
+_HDF5_DSNAME = 'coherence'  # dataset name for HDF5 coherence files
+
+def calculate_coh_mat(freq, spat_df, coh_model='iec', dtype=np.float64, chunk_idcs=None,
+                      **kwargs):
+    """Calculate coherence matrix using Cholesky decomposition.
+
+    Parameters
+    ----------
+    freq : array-like
+        [Hz] Full frequency vector for coherence calculations. Option to calculate 
+        coherence for a subset using `chunk_idcs` keyword argument. Dimension is
+        ``(n_f,)``.
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have rows `[k, x, y, z]`,
+        and each of the `n_sp` columns corresponds to a different spatial location and
+        turbine component (u, v or w).
+    coh_model : str, optional
+        Spatial coherence model specifier. Default is "iec" (IEC 61400-1, Ed. 4).
+    dtype : data type, optional
+        Change precision of calculation (np.float32 or np.float64). Will reduce the 
+        storage, and might slightly reduce the computational time. Default is np.float64.
+    chunk_idcs : int or numpy.array
+        Indices of `freq` for which coherence should be calculated or loaded. Dimension
+        is ``(n_fchunk,)`` if given. Default is None (get all frequencies in `freq`).
+    **kwargs
+        Keyword arguments to pass into ``get_iec[3d]_cor_mat``.
+
+
+    Returns
+    -------
+    coh_mat : numpy.ndarray
+        Generated coherence matrix. Dimension is ``(n_fchunk, n_sp, n_sp)``.
     """
-    # get correlation matrix
+    
+    # update chunk_idcs if not given
+    chunk_idcs = check_chunk_idcs(freq, chunk_idcs)
+    
+    # throw error if chunk indices not a numpy array
+    if type(chunk_idcs) not in [int, np.ndarray]:
+        raise ValueError('chunk_idcs must be integer or numpy array!')
+    
+    # get chunk frequency array
+    freq_chunk = np.atleast_1d(freq)[chunk_idcs]
+
+    # get CORRELATION matrix based on coherence model
     if coh_model == 'iec':  # IEC coherence model
-        coh_mat = get_iec_cor_mat(freq, spat_df, dtype=dtype, coh_model=coh_model,
+        coh_mat = get_iec_cor_mat(freq_chunk, spat_df, dtype=dtype, coh_model=coh_model,
                                   **kwargs)
-    elif coh_model == 'iec3d':
-        coh_mat = get_iec3d_cor_mat(freq, spat_df, dtype=dtype, coh_model=coh_model,
+    elif coh_model == 'iec3d':  # IEC coherence model, but in u, v, and w
+        coh_mat = get_iec3d_cor_mat(freq_chunk, spat_df, dtype=dtype, coh_model=coh_model,
                                     **kwargs)
     else:  # unknown coherence model
         raise ValueError(f'Coherence model "{coh_model}" not recognized!')
 
-    # get coherence matrix via cholesky decomp.
-    # in-place for memory reduction.
+    # get COHERENCE matrix (in-place) via cholesky decomp. In-place saves memory.
     # TODO! EASY parallelization here
     for i in range(coh_mat.shape[0]):
         coh_mat[i] = cholesky(coh_mat[i], check_finite=False, lower=True)
 
     return coh_mat
+
 
 
 def chunker(iterable, nPerChunks):
@@ -39,8 +84,132 @@ def chunker(iterable, nPerChunks):
        yield chunk
 
 
+def get_coh_mat(freq, spat_df, coh_model='iec', dtype=np.float64, coh_file=None,
+                chunk_idcs=None, **kwargs):
+    """Get coherence matrix (either calculate or load) for set of frequencies.
+    
+    If the `coh_file` option is given, this function calls `load_coh_mat` to load the
+    requested matrix from file. If no file name is given, this function instead calls
+    `calculate_coh_mat` to calculate the coherence matrix.
+    
+    Parameters
+    ----------
+    freq : array-like
+        [Hz] Full frequency vector for coherence calculations. Option to calculate 
+        coherence for a subset using `chunk_idcs` keyword argument. Dimension is
+        ``(n_f,)``.
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have rows `[k, x, y, z]`,
+        and each of the `n_sp` columns corresponds to a different spatial location and
+        turbine component (u, v or w).
+    coh_model : str, optional
+        Spatial coherence model specifier. Default is "iec" (IEC 61400-1, Ed. 4).
+    dtype : data type, optional
+        Change precision of calculation (np.float32 or np.float64). Will reduce the 
+        storage, and might slightly reduce the computational time. Default is np.float64.
+    coh_file : str or pathlib.Path
+        Path to file from which to load coherence. Assumed to be an HDF5 file with
+        dataset "coherence" containing a 2D coherence array with dimensions 
+        ``(n_f, n_sp^2)``. Default is None (calculate, don't load from file).
+    chunk_idcs : int or numpy.array
+        Indices of `freq` for which coherence should be calculated or loaded. Dimension
+        is ``(n_fchunk,)`` if given. Default is None (get all frequencies in `freq`).
+    **kwargs
+        Keyword arguments to pass into ``calculate_coh_mat``.
+
+
+    Returns
+    -------
+    coh_mat : numpy.ndarray
+        Generated coherence matrix. Dimension is ``(n_fchunk, n_sp, n_sp)``.
+    """
+    
+    # update chunk_idcs if not given
+    chunk_idcs = check_chunk_idcs(freq, chunk_idcs)
+
+    # if filename not given, calculate the coherence matrix
+    if coh_file is None:
+        coh_mat = calculate_coh_mat(freq, spat_df, coh_model=coh_model, dtype=dtype,
+                                    chunk_idcs=chunk_idcs, **kwargs)
+    
+    # if a filename IS given
+    else:
+        
+        # raise error if file not existing
+        if not os.path.isfile(coh_file):
+            raise ValueError(f'File "{coh_file}" not found! Generate it using `generate_coherence_file`.')
+        
+        # otherwise, load it from the file
+        coh_mat = load_coh_mat(coh_file, freq, chunk_idcs=chunk_idcs)
+
+    return coh_mat
+
+
+def generate_coherence_file(freq, spat_df, coh_file, coh_model='iec', nf_chunk=1,
+                            dtype=np.float64, **kwargs):
+    """Calculate a coherence matrix and save it to an HDF5 file for later reuse.
+
+    Parameters
+    ----------
+    freq : array-like
+        [Hz] Full frequency vector for coherence calculations. Option to calculate 
+        coherence for a subset using `chunk_idcs` keyword argument. Dimension is
+        ``(n_f,)``.
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have rows `[k, x, y, z]`,
+        and each of the `n_sp` columns corresponds to a different spatial location and
+        turbine component (u, v or w).
+    coh_file : str or pathlib.Path
+        Path to file from which to load coherence. Assumed to be an HDF5 file with
+        dataset "coherence" containing a 2D coherence array with dimensions 
+        ``(n_f, n_sp^2)``.
+    coh_model : str, optional
+        Spatial coherence model specifier. Default is "iec" (IEC 61400-1, Ed. 4).
+    dtype : data type, optional
+        Change precision of calculation (np.float32 or np.float64). Will reduce the 
+        storage, and might slightly reduce the computational time. Default is np.float64.
+    nf_chunk : int, optional
+        Number of frequencies in a chunk of analysis. Increasing this number may speed
+        up computation but may result in more (or too much) memory used. Smaller grids
+        may benefit from larger values for ``nf_chunk``. Default is 1.
+    **kwargs
+        Keyword arguments to pass into ``calculate_coh_mat``.
+
+
+    Returns
+    -------
+    coh_mat : numpy.ndarray
+        Generated coherence matrix. Dimension is ``(n_fchunk, n_sp, n_sp)``.
+    """
+    n_s = spat_df.shape[1]
+    n_f = np.size(freq)
+    n_chunks = np.ceil(n_f / nf_chunk).astype(int)
+    
+    # open the file
+    with h5py.File(coh_file, 'w') as hf:
+        
+        # initialize dataset
+        dset = hf.create_dataset(_HDF5_DSNAME, (n_f, n_s**2), dtype=dtype)
+        
+        # for each chunk
+        for i_chunk in range(n_chunks):
+            
+            # get the chunk indices
+            chunk_idcs = np.arange(i_chunk*n_chunks, min((i_chunk + 1)*n_chunks, n_f))
+            
+            # calculate the coherence matrix
+            chunk_coh_mat = calculate_coh_mat(freq, spat_df, coh_model=coh_model,
+                                              dtype=dtype, chunk_idcs=chunk_idcs,
+                                              **kwargs)
+
+            # add coherence to the dataset
+            dset[chunk_idcs, :] = chunk_coh_mat.reshape(len(chunk_idcs), n_s**2)
+            
+    return
+
+
 def get_iec_cor_mat(freq, spat_df, dtype=np.float64, ed=4, **kwargs):
-    """Create IEC 61400-1 Ed. 3/4 correlation matrix for given frequencies
+    """Create IEC 61400-1 Ed. 3/4 correlation matrix for given frequencies. [nf x ns x ns]
     """
     # preliminaries
     if ed not in [3, 4]:  # only allow edition 3
@@ -69,7 +238,7 @@ def get_iec_cor_mat(freq, spat_df, dtype=np.float64, ed=4, **kwargs):
 
 
 def get_iec3d_cor_mat(freq, spat_df, dtype=np.float64, **kwargs):
-    """Create IEC-flavor correlation but for all 3 components
+    """Create IEC-flavor correlation but for all 3 components. Returns nf x ns x ns.
     """
     # preliminaries
     if any([k not in kwargs for k in ['u_ref', 'l_c']]):  # check kwargs
@@ -98,17 +267,38 @@ def get_iec3d_cor_mat(freq, spat_df, dtype=np.float64, **kwargs):
 
 
 
-
-# import pandas as pd
-# from pyconturb._utils import _spat_rownames
-
-
-# # given
-# spat_df = pd.DataFrame([[0, 0], [0, 0], [0, 0], [0, 1]], index=_spat_rownames, columns=['u_p0', 'u_p1'])
-# freq = 1
-# kwargs = {'u_ref': 1, 'l_c': 1}
-# coh_theo = np.array([[1, 5.637379774e-6],
-#                       [5.637379774e-6, 1]])
-# # when
-# coh_mat = get_coh_mat(freq, spat_df, dtype=np.float32, **kwargs)
-# print(coh_mat.dtype)
+def load_coh_mat(coh_file, freq, chunk_idcs=None):
+    """Load all or part of a coherence matrix from an HDF5 file.
+    
+    Parameters
+    ----------
+    coh_file : str or pathlib.Path
+        Path to file from which to load coherence. Assumed to be an HDF5 file with
+        dataset "coherence" containing a 2D coherence array with dimensions 
+        ``(n_f, n_sp^2)``.
+    freq : array-like
+        [Hz] Full frequency vector for coherence calculations. Option to calculate 
+        coherence for a subset using `chunk_idcs` keyword argument. Dimension is
+        ``(n_f,)``.
+    chunk_idcs : int or numpy.array
+        Indices of `freq` for which coherence should be calculated or loaded. Dimension
+        is ``(n_fchunk,)`` if given. Default is None (get all frequencies in `freq`).
+    
+    
+    Returns
+    -------
+    coh_mat : numpy.ndarray
+        Generated coherence matrix. Dimension is ``(n_fchunk, n_sp, n_sp)``.
+    """
+    
+    # update chunk_idcs if not given
+    chunk_idcs = check_chunk_idcs(freq, chunk_idcs)
+    
+    # load the slice from memory
+    with h5py.File(coh_file, 'r') as hf:
+        coh_mat_2d = hf[_HDF5_DSNAME][chunk_idcs, :]
+    
+    ns = np.sqrt(coh_mat_2d.shape[1]).astype(int)
+    
+    return coh_mat_2d.reshape((-1, ns, ns))
+    

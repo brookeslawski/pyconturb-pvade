@@ -14,6 +14,17 @@ import pyconturb._utils as utils
 _spat_rownames = utils._spat_rownames
 
 
+@pytest.mark.parametrize('test_in,expected', [(None, np.arange(2)), (np.arange(1), np.arange(1))])
+def test_check_chunk_idcs(test_in, expected):
+    """Verify value"""
+    # given
+    freq = [0, 1]
+    # when
+    chunk_idcs = utils.check_chunk_idcs(freq, test_in)
+    # then
+    np.testing.assert_array_equal(chunk_idcs, expected)
+
+
 def test_check_sims_collocated():
     """verify function works when no unique simulation points"""
     # given -- constraining points

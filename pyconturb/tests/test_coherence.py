@@ -14,7 +14,8 @@ import pytest
 from scipy.linalg import cholesky
 
 from pyconturb.simulation import gen_turb
-from pyconturb.coherence import get_coh_mat
+from pyconturb.coherence import (calculate_coh_mat, generate_coherence_file, get_coh_mat,
+                                 load_coh_mat)
 from pyconturb._utils import gen_spat_grid, _spat_rownames
 
 
@@ -47,6 +48,33 @@ def test_get_coh_mat_badcohmodel():
     # when & then
     with pytest.raises(ValueError):
         get_coh_mat(spat_df, freq, coh_model=coh_model)
+
+
+def test_save_load_coherence(tmp_path):
+    """Save coherence to file and reload. Tests:
+        generate_coherence_file
+        calculate_coh_mat
+        load_coh_mat
+    """
+    # given
+    coh_file = tmp_path / 'test.h5'
+    spat_df = pd.DataFrame([[0, 1, 2, 0, 1, 2],
+                            [0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 0, 0, 0],
+                            [0, 0, 0, 1, 1, 1]],
+                           index=_spat_rownames)
+    freq, u_ref, l_c = [0.5, 1], 2, 3
+    kwargs = {'ed': 3, 'u_ref': u_ref, 'l_c': l_c, 'dtype': np.float32}
+    
+    # when
+    generate_coherence_file(freq, spat_df, coh_file, **kwargs)
+    coh_theo = calculate_coh_mat(freq, spat_df, **kwargs)
+    
+    # load from file
+    coh_mat = load_coh_mat(coh_file, freq)
+    
+    np.testing.assert_array_almost_equal(coh_theo, coh_mat)
+
 
 # ========================== tests for get_iec_coh_mat ==========================
 
@@ -195,10 +223,11 @@ def test_get_iec3d_coh_mat_missingkwargs():
         get_coh_mat(freq, spat_df, coh_model=coh_model, **kwargs)
 
 
-# if __name__ == '__main__':
-#     test_get_coh_mat_default()
-#     test_get_coh_mat_badcohmodel()
-#     test_get_iec_coh_mat_badedition()
-#     test_get_iec_coh_mat_missingkwargs()
-#     test_get_iec_coh_mat_value_dtype()
-#     test_get_iec3d_coh_mat_value_dtype()    
+if __name__ == '__main__':
+    test_get_coh_mat_default()
+    test_get_coh_mat_badcohmodel()
+    test_save_load_coherence()
+    test_get_iec_coh_mat_badedition()
+    test_get_iec_coh_mat_missingkwargs()
+    test_get_iec_coh_mat_value_dtype()
+    test_get_iec3d_coh_mat_value_dtype()    

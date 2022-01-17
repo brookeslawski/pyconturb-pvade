@@ -14,6 +14,11 @@ _DEF_KWARGS = {'u_ref': 0, 'z_ref': 90, 'alpha': 0.2, 'turb_class': 'A',
 _HAWC2_TURB_COOR = {'u': -1, 'v': -1, 'w': 1}  # hawc2 turb xyz to uvw
 
 
+def check_chunk_idcs(freq, chunk_idcs):
+    """Check chunk_idcs and update if it's not given"""
+    return np.arange(np.size(freq)) if chunk_idcs is None else chunk_idcs
+
+
 def check_sims_collocated(spat_df, con_tc):
     """Determine if the simulation points are all collocated with the 
     constraints. Returns boolean (True=all collocated)"""

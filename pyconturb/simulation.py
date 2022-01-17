@@ -164,8 +164,7 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
                 message(f'  Processing chunk {i_chunk + 1} / {n_chunks}', verbose)
                 chunk_coh_mat = get_coh_mat(freq[i_chunk*nf_chunk:(i_chunk + 1)*nf_chunk],
                                             all_spat_df, coh_model=coh_model,
-                                            dtype=dtype,
-                                            **kwargs)
+                                            dtype=dtype, **kwargs)
 
             # coherence array for this frequency
             coh_mat = chunk_coh_mat[i_f % nf_chunk]  # ns x ns
