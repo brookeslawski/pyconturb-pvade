@@ -7,6 +7,8 @@ import numpy as np
 import pandas as pd
 import scipy.interpolate as sciint
 
+from pyconturb.core import TimeConstraint
+
 
 _spat_rownames = ['k', 'x', 'y', 'z']  # row names of spatial df
 _DEF_KWARGS = {'u_ref': 0, 'z_ref': 90, 'alpha': 0.2, 'turb_class': 'A',
@@ -75,6 +77,8 @@ def combine_spat_con(spat_df, con_tc, drop_duplicates=True, decimals=10):
     first or gen_turb will break. ALSO keep the data rows! Need them for corr. ALSO this
     function catches duplicates by first rounding to decimals places.
     """
+    if con_tc is None:
+        con_tc = TimeConstraint(index=_spat_rownames)
     con_spat_df = con_tc.get_spat().add_suffix('_con')
     if (set(spat_df.columns).intersection(set(con_spat_df.columns)) and (con_tc.size)):
         raise ValueError('Prohibited spat_df/con_tc column names! No column in spat_df' +
