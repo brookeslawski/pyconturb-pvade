@@ -12,10 +12,11 @@ import pandas as pd
 import pytest
 
 from pyconturb import gen_turb, TimeConstraint
+from pyconturb.coherence import generate_coherence_file
 from pyconturb.sig_models import iec_sig
 from pyconturb.spectral_models import kaimal_spectrum
-from pyconturb.wind_profiles import constant_profile, power_profile
-from pyconturb._utils import gen_spat_grid, _spat_rownames
+from pyconturb.wind_profiles import power_profile
+from pyconturb._utils import gen_spat_grid, _spat_rownames, get_freq
 
 
 def test_iec_turb_mn_std_dev():
@@ -39,9 +40,8 @@ def test_gen_turb_con():
     # given -- constraining points
     con_spat_df = pd.DataFrame([[0, 0, 0, 70]], columns=_spat_rownames).T
     kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
-              'nt': 600, 'seed': 1337}
-    coh_model = 'iec'
-    con_turb_df = gen_turb(con_spat_df, coh_model=coh_model, **kwargs)
+              'nt': 600, 'seed': 1337, 'coh_model': 'iec'}
+    con_turb_df = gen_turb(con_spat_df, **kwargs)
     con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df.T,
                                             con_turb_df=con_turb_df)  # old spat_df was T
     # given -- simulated, constrainted turbulence
@@ -53,7 +53,7 @@ def test_gen_turb_con():
     theo_cols = [f'{"uvw"[ic]}_p{ip}' for ip in range(2)for ic in range(3)]
     # when
     sim_turb_df = gen_turb(spat_df, con_tc=con_tc, wsp_func=wsp_func, sig_func=sig_func,
-                           spec_func=spec_func, coh_model=coh_model, **kwargs)
+                           spec_func=spec_func, **kwargs)
     # then (std dev, mean, and regen'd time series should be close; right colnames)
     pd.testing.assert_index_equal(sim_turb_df.columns, pd.Index(theo_cols))
     np.testing.assert_allclose(sig_theo, sim_turb_df.std(axis=0), atol=0.01, rtol=0.50)
@@ -201,6 +201,23 @@ def test_gen_turb_warning_dt():
         gen_turb(spat_df, **kwargs)
 
 
+def test_gen_turb_same_coh_file(tmp_path):
+    """Verify that gen_turb produces the same result with and without the coh_file option"""
+    # given
+    y, z = 0, [70, 80]
+    spat_df = gen_spat_grid(y, z)
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300, 'nt': 30,
+              'seed': 1337, 'nf_chunk': 5000}
+    coh_file = tmp_path / 'test.h5'
+    # when
+    t, freq = get_freq(**kwargs)
+    generate_coherence_file(freq, spat_df, coh_file, **kwargs)
+    turb_df_orig = gen_turb(spat_df, **kwargs)
+    turb_df_cohfile = gen_turb(spat_df, coh_file=coh_file, **kwargs)
+    # then
+    pd.testing.assert_frame_equal(turb_df_orig, turb_df_cohfile)
+
+
 if __name__ == '__main__':
     test_iec_turb_mn_std_dev()
     test_gen_turb_con()
@@ -212,3 +229,4 @@ if __name__ == '__main__':
     test_gen_turb_spec_func()
     test_gen_turb_sims_collocated()
     test_gen_turb_warning_dt()
+    # test_gen_turb_same_coh_file()  # uses pytest tmpdir fixture
