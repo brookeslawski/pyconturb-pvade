@@ -109,6 +109,17 @@ def test_combine_spat_con_tcinspat():
     pd.testing.assert_frame_equal(theo_df, comb_df, check_dtype=False)
 
 
+def test_combine_spat_con_none():
+    """When con_tc is None, should return same"""
+    # given
+    con_tc = None
+    spat_df = pd.DataFrame([[0], [0], [0], [60]], index=_spat_rownames, columns=['u_p0'])
+    # when
+    comb_df = utils.combine_spat_con(spat_df, con_tc)
+    # then
+    pd.testing.assert_frame_equal(comb_df, spat_df)
+    
+
 def test_gen_spat_grid():
     """verify column names and entries of spat grid
     """
