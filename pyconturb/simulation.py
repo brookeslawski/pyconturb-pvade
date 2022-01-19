@@ -9,7 +9,6 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import scipy
 
 from pyconturb.coherence import get_coh_mat
 from pyconturb.core import TimeConstraint
@@ -18,10 +17,10 @@ from pyconturb.sig_models import iec_sig, data_sig
 from pyconturb.spectral_models import kaimal_spectrum, data_spectrum
 from pyconturb.wind_profiles import get_wsp_values, power_profile, data_profile
 from pyconturb._utils import (combine_spat_con, _spat_rownames, _DEF_KWARGS,
-                              clean_turb, check_sims_collocated, message)
+                              clean_turb, check_sims_collocated, get_freq, message)
 
 
-def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
+def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec', coh_file=None,
              wsp_func=None, sig_func=None, spec_func=None,
              interp_data='none', seed=None, nf_chunk=1, dtype=np.float64, verbose=False,
              **kwargs):
@@ -42,6 +41,10 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
         into PyConTurb; see documentation for more details.
     coh_model : str, optional
         Spatial coherence model specifier. Default is IEC 61400-1, Ed. 4.
+    coh_file : str or pathlib.Path
+        Path to file from which to load coherence. Assumed to be an HDF5 file with
+        dataset "coherence" containing a 2D coherence array with dimensions 
+        ``(n_f, (n_sp + n_c)^2)``. See documentation for more details.
     wsp_func : function, optional
         Function to specify spatial variation of mean wind speed. See details
         in `Mean wind speed profiles` section.
@@ -101,7 +104,7 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
               + 'Nothing to simulate.')
         return None
 
-    dtype_complex=np.complex64 if dtype==np.float32 else np.complex128  # complex dtype
+    dtype_complex = np.complex64 if dtype==np.float32 else np.complex128  # complex dtype
 
     # add T, nt, con_tc to kwargs
     kwargs = {**_DEF_KWARGS, **kwargs, 'T': T, 'nt': nt, 'con_tc': con_tc}
@@ -109,7 +112,7 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
                                                              spec_func, interp_data)
 
     # assign/create constraining data
-    t = np.arange(nt) * T / nt  # time array
+    t, freq = get_freq(**kwargs)  # time array
     if con_tc is None:  # create empty constraint data if not passed in
         constrained, n_d = False, 0  # no. of constraints
         con_tc = TimeConstraint(index=_spat_rownames)
@@ -122,16 +125,12 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
     # combine data and sim spat_dfs
     all_spat_df = combine_spat_con(spat_df, con_tc)  # all sim points
     n_s = all_spat_df.shape[1]  # no. of total points to simulate
+    n_f = freq.size # no. freqs
 
-    one_point = False
-    if n_s == 1:  # only one point, skip coherence
-        one_point = True
-
-    # intermediate variables
-    n_f = nt // 2 + 1  # no. freqs
-    freq = np.arange(n_f) / kwargs['T']  # frequency array
+    one_point = True if n_s == 1 else False  # only one point, skip coherence
 
     # get magnitudes of points to simulate. (nf, nsim). con_tc in kwargs.
+    # TODO: Change this to similar form as get_coh_mat
     sim_mags = get_magnitudes(all_spat_df.iloc[:, n_d:], spec_func, sig_func, **kwargs)
 
     if constrained:
@@ -163,8 +162,8 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
             if (i_f - 1) % nf_chunk == 0:  # genr cohrnc chunk when needed
                 message(f'  Processing chunk {i_chunk + 1} / {n_chunks}', verbose)
                 chunk_coh_mat = get_coh_mat(freq[i_chunk*nf_chunk:(i_chunk + 1)*nf_chunk],
-                                            all_spat_df, coh_model=coh_model,
-                                            dtype=dtype, **kwargs)
+                                            spat_df, coh_model=coh_model,
+                                            dtype=dtype, coh_file=coh_file, **kwargs)
 
             # coherence array for this frequency
             coh_mat = chunk_coh_mat[i_f % nf_chunk]  # ns x ns
@@ -197,8 +196,7 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec',
     wsp_profile = get_wsp_values(spat_df, wsp_func, **kwargs)
     turb_df[:] += wsp_profile
 
-    if verbose:
-        print('Turbulence generation complete.')
+    message('Turbulence generation complete.', verbose)
 
     return turb_df
 
