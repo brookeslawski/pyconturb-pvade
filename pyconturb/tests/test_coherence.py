@@ -13,6 +13,7 @@ import pandas as pd
 import pytest
 from scipy.linalg import cholesky
 
+from pyconturb.core import TimeConstraint
 from pyconturb.simulation import gen_turb
 from pyconturb.coherence import (calculate_coh_mat, generate_coherence_file, get_coh_mat,
                                  load_coh_mat)
@@ -39,7 +40,8 @@ def test_get_coh_mat_default():
 
 
 def test_get_coh_mat_badcohmodel():
-    """Should raise an error if a wrong coherence model is passed in
+    """Should raise an error if a wrong coherence model is passed in.
+    Also tests integer freqeucny.
     """
     # given
     spat_df = pd.DataFrame([[0], [0], [0], [0]], index=_spat_rownames, columns=['u_p0'])
@@ -47,11 +49,32 @@ def test_get_coh_mat_badcohmodel():
     coh_model = 'garbage'
     # when & then
     with pytest.raises(ValueError):
-        get_coh_mat(spat_df, freq, coh_model=coh_model)
+        get_coh_mat(freq, spat_df, coh_model=coh_model)
 
 
-def test_save_load_coherence(tmp_path):
-    """Save coherence to file and reload. Tests:
+def test_get_coh_mat_con():
+    """Test whether the correct coherence matrix is calculated with a constraint.
+    """
+    # given
+    all_spat_df = pd.DataFrame([[0, 1, 2, 0, 1, 2],
+                                [0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 0, 0, 0],
+                                [0, 0, 0, 1, 1, 1]],
+                               index=_spat_rownames)
+    con_spat_df = all_spat_df.iloc[:, [0]]
+    spat_df = all_spat_df.iloc[:, 1:]
+    con_tc = TimeConstraint(pd.concat((con_spat_df, pd.DataFrame([0])), axis=0))
+    freq, u_ref, l_c = [0.5, 1], 2, 3
+    kwargs = {'ed': 3, 'u_ref': u_ref, 'l_c': l_c, 'dtype': np.float32}
+    coh_theo = calculate_coh_mat(freq, all_spat_df, **kwargs)
+    # when
+    coh_mat = get_coh_mat(freq, spat_df, con_tc=con_tc, **kwargs)
+    # then
+    np.testing.assert_array_almost_equal(coh_theo, coh_mat)
+
+
+def test_save_load_coherence_nocon(tmp_path):
+    """Save coherence to file and reload (no constraint). Keep nf_chunk > 1. Tests:
         generate_coherence_file
         calculate_coh_mat
         load_coh_mat
@@ -64,15 +87,14 @@ def test_save_load_coherence(tmp_path):
                             [0, 0, 0, 1, 1, 1]],
                            index=_spat_rownames)
     freq, u_ref, l_c = [0.5, 1], 2, 3
-    kwargs = {'ed': 3, 'u_ref': u_ref, 'l_c': l_c, 'dtype': np.float32}
+    kwargs = {'ed': 3, 'u_ref': u_ref, 'l_c': l_c, 'dtype': np.float32, 'nf_chunk': 3}
     
     # when
     generate_coherence_file(freq, spat_df, coh_file, **kwargs)
     coh_theo = calculate_coh_mat(freq, spat_df, **kwargs)
-    
-    # load from file
     coh_mat = load_coh_mat(coh_file, freq)
     
+    # then
     np.testing.assert_array_almost_equal(coh_theo, coh_mat)
 
 
@@ -167,7 +189,6 @@ def test_get_iec_coh_mat_verify_coherence():
     # then
     assert max_sig_diff < sig_thresh
 
-test_get_iec_coh_mat_verify_coherence()
 
 # ========================== tests for get_iec3d_coh_mat ==========================
 
@@ -226,7 +247,8 @@ def test_get_iec3d_coh_mat_missingkwargs():
 if __name__ == '__main__':
     test_get_coh_mat_default()
     test_get_coh_mat_badcohmodel()
-    test_save_load_coherence()
+    test_get_coh_mat_con()
+    #test_save_load_coherence_nocon()  # can't run -- pytest fixture
     test_get_iec_coh_mat_badedition()
     test_get_iec_coh_mat_missingkwargs()
     test_get_iec_coh_mat_value_dtype()
