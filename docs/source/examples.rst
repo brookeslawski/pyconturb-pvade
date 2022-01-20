@@ -25,5 +25,6 @@ The notebooks are located in ``docs/source/notebooks`` in the repository.
     notebooks/1_unconstr_time_series
     notebooks/2_custom_profiles
     notebooks/3_constr_time_series
-    notebooks/4_pyconturb_interpolator
-    notebooks/5_data_profile_interp
+    notebooks/4_pregenerating_coherence
+    notebooks/5_pyconturb_interpolator
+    notebooks/6_data_profile_interp

@@ -18,18 +18,19 @@ def calculate_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.floa
                       chunk_idcs=None, **kwargs):
     """Calculate coherence matrix using Cholesky decomposition.
     
-    If constraint is passed in, the first ``n_c`` rows/columns correlate the constraints,
-    and the subsequent ``n_sp`` rows/columns correspond to the request simulation points.
+    If constraint is passed in, the first ``n_c`` rows/columns of the returned array
+    correlate the constraints and the subsequent ``n_sp`` rows/columns correspond to the 
+    requested simulation points.
 
     Parameters
     ----------
     freq : array-like
         [Hz] Full frequency vector for coherence calculations. Option to calculate 
-        coherence for a subset using `chunk_idcs` keyword argument. Dimension is
+        coherence for a subset using ``chunk_idcs`` keyword argument. Dimension is
         ``(n_f,)``.
     spat_df : pandas.DataFrame
-        Spatial information on the points to simulate. Must have rows `[k, x, y, z]`,
-        and each of the `n_sp` columns corresponds to a different spatial location and
+        Spatial information on the points to simulate. Must have rows ``[k, x, y, z]``,
+        and each of the ``n_sp`` columns corresponds to a different spatial location and
         turbine component (u, v or w).
     con_tc : pyconturb TimeConstraint, optional
         Optional constraining data for the simulation. The TimeConstraint object is built
@@ -41,8 +42,8 @@ def calculate_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.floa
         Change precision of calculation (np.float32 or np.float64). Will reduce the 
         storage, and might slightly reduce the computational time. Default is np.float64.
     chunk_idcs : int or numpy.array, optional
-        Indices of `freq` for which coherence should be calculated or loaded. Dimension
-        is ``(n_fchunk,)`` if given. Default is None (get all frequencies in `freq`).
+        Indices of ``freq`` for which coherence should be calculated or loaded. Dimension
+        is ``(n_fchunk,)`` if given. Default is None (get all frequencies in ``freq``).
     **kwargs
         Keyword arguments to pass into ``get_iec[3d]_cor_mat``.
 
@@ -50,7 +51,7 @@ def calculate_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.floa
     Returns
     -------
     coh_mat : numpy.ndarray
-        Generated coherence matrix. Dimension is ``(n_fchunk, n_c+n_sp, n+cn_sp)``.
+        Generated coherence matrix. Dimension is ``(n_fchunk, n_c+n_sp, n+n_sp)``.
     """
     
     # preppring
@@ -102,11 +103,11 @@ def generate_coherence_file(freq, spat_df, coh_file, con_tc=None, coh_model='iec
     ----------
     freq : array-like
         [Hz] Full frequency vector for coherence calculations. Option to calculate 
-        coherence for a subset using `chunk_idcs` keyword argument. Dimension is
+        coherence for a subset using ``chunk_idcs`` keyword argument. Dimension is
         ``(n_f,)``.
     spat_df : pandas.DataFrame
-        Spatial information on the points to simulate. Must have rows `[k, x, y, z]`,
-        and each of the `n_sp` columns corresponds to a different spatial location and
+        Spatial information on the points to simulate. Must have rows ``[k, x, y, z]``,
+        and each of the ``n_sp`` columns corresponds to a different spatial location and
         turbine component (u, v or w).
     coh_file : str or pathlib.Path
         Path to file from which to load coherence. Assumed to be an HDF5 file with
@@ -173,9 +174,9 @@ def get_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.float64,
                 coh_file=None, chunk_idcs=None, **kwargs):
     """Get coherence matrix (either calculate or load) for set of frequencies.
     
-    If the `coh_file` option is given, this function calls `load_coh_mat` to load the
+    If the ``coh_file`` option is given, this function calls ``load_coh_mat`` to load the
     requested matrix from file. If no file name is given, this function instead calls
-    `calculate_coh_mat` to calculate the coherence matrix.
+    ``calculate_coh_mat`` to calculate the coherence matrix.
     
     Parameters
     ----------
@@ -183,10 +184,10 @@ def get_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.float64,
         [Hz] Full frequency vector for coherence calculations. Option to calculate 
         coherence for a subset using `chunk_idcs` keyword argument. Dimension is
         ``(n_f,)``.
-    spat_df : pandas.DataFrame
-        Spatial information on the points to simulate. Must have rows `[k, x, y, z]`,
-        and each of the `n_sp` columns corresponds to a different spatial location and
-        turbine component (u, v or w).
+spat_df : pandas.DataFrame
+    Spatial information on the points to simulate. Must have rows ``[k, x, y, z]``,
+    and each of the ``n_sp`` columns corresponds to a different spatial location and
+    turbine component (u, v or w).
     con_tc : pyconturb TimeConstraint, optional
         Optional constraining data for the simulation. The TimeConstraint object is built
         into PyConTurb; see documentation for more details. Default is none (no 
@@ -202,7 +203,7 @@ def get_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.float64,
         ``(n_f, n_sp^2)``. Default is None (calculate, don't load from file).
     chunk_idcs : int or numpy.array, optional
         Indices of `freq` for which coherence should be calculated or loaded. Dimension
-        is ``(n_fchunk,)`` if given. Default is None (get all frequencies in `freq`).
+        is ``(n_fchunk,)`` if given. Default is None (get all frequencies in ``freq``).
     **kwargs
         Keyword arguments to pass into ``calculate_coh_mat``.
 
@@ -211,7 +212,7 @@ def get_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.float64,
     -------
     coh_mat : numpy.ndarray
         Generated or loaded coherence matrix. Dimension is
-        ``(n_fchunk, n_c+n_sp, n+cn_sp)``.
+        ``(n_fchunk, n_c+n_sp, n+n_sp)``.
     """
     
     # update chunk_idcs if not given

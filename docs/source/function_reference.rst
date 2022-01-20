@@ -14,5 +14,6 @@ Contents:
         ref_guide/profiles
         ref_guide/sig_models
         ref_guide/spectral_models
+        ref_guide/coherence
         ref_guide/time_constraint
         ref_guide/interpolator
