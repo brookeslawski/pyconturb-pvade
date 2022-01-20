@@ -8,7 +8,7 @@ import h5py
 import numpy as np
 from scipy.linalg import cholesky
 
-from pyconturb._utils import check_chunk_idcs, combine_spat_con, message
+from pyconturb._utils import check_chunk_idcs, combine_spat_con, get_chunk_idcs, message
 
 
 _HDF5_DSNAME = 'coherence'  # dataset name for HDF5 coherence files
@@ -154,7 +154,7 @@ def generate_coherence_file(freq, spat_df, coh_file, con_tc=None, coh_model='iec
             message(f'Processing chunk {i_chunk+1}/{n_chunks}...', verbose)
             
             # get the indices of frequencies for this chunk
-            chunk_idcs = np.arange(i_chunk*n_chunks, min((i_chunk + 1)*nf_chunk, n_f))
+            chunk_idcs = get_chunk_idcs(freq, i_chunk, nf_chunk)
             
             # calculate the coherence matrix
             chunk_coh_mat = calculate_coh_mat(freq, spat_df, coh_model=coh_model,

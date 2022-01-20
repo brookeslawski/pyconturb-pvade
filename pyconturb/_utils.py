@@ -110,6 +110,12 @@ def gen_spat_grid(y, z, comps=[0, 1, 2]):
     return pd.DataFrame(spat_arr, index=_spat_rownames, columns=col_names)
 
 
+def get_chunk_idcs(freq, i_chunk, nf_chunk):
+    """Return the range of indices corresponding to a specific chunk of frequencies."""
+    n_f = len(freq)
+    return np.arange(i_chunk*nf_chunk, min((i_chunk + 1)*nf_chunk, n_f))
+
+
 def get_freq(**kwargs):
     """get frequency array"""
     t = np.arange(kwargs['nt']) * kwargs['T'] / kwargs['nt']

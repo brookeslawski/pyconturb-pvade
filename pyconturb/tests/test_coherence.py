@@ -86,16 +86,17 @@ def test_save_load_coherence_nocon(tmp_path):
                             [0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 1, 1, 1]],
                            index=_spat_rownames)
-    freq, u_ref, l_c = [0.5, 1], 2, 3
-    kwargs = {'ed': 3, 'u_ref': u_ref, 'l_c': l_c, 'dtype': np.float32, 'nf_chunk': 3}
-    
-    # when
-    generate_coherence_file(freq, spat_df, coh_file, **kwargs)
-    coh_theo = calculate_coh_mat(freq, spat_df, **kwargs)
-    coh_mat = load_coh_mat(coh_file, freq)
-    
-    # then
-    np.testing.assert_array_almost_equal(coh_theo, coh_mat)
+    freq, u_ref, l_c = [0.5, 1, 1.5, 2.0, 2.5], 2, 240.3
+    kwargs = {'ed': 3, 'u_ref': u_ref, 'l_c': l_c, 'dtype': np.float32}
+    for nf_chunk in range(1, len(freq)+1):
+        kwargs['nf_chunk'] = nf_chunk
+        # when
+        generate_coherence_file(freq, spat_df, coh_file, **kwargs)
+        coh_theo = calculate_coh_mat(freq, spat_df, **kwargs)
+        coh_mat = load_coh_mat(coh_file, freq)
+        
+        # then
+        np.testing.assert_array_almost_equal(coh_theo, coh_mat)
 
 
 # ========================== tests for get_iec_coh_mat ==========================

@@ -204,18 +204,19 @@ def test_gen_turb_warning_dt():
 def test_gen_turb_same_coh_file(tmp_path):
     """Verify that gen_turb produces the same result with and without the coh_file option"""
     # given
-    y, z = 0, [70, 80]
-    spat_df = gen_spat_grid(y, z)
-    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300, 'nt': 30,
-              'seed': 1337, 'nf_chunk': 5000}
+    y, z = [-5, 5], [70, 80]
+    spat_df = gen_spat_grid(y, z, comps=[0])
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 6, 'nt': 6,
+              'seed': 1337, 'nf_chunk': 2}
     coh_file = tmp_path / 'test.h5'
     # when
-    t, freq = get_freq(**kwargs)
-    generate_coherence_file(freq, spat_df, coh_file, **kwargs)
-    turb_df_orig = gen_turb(spat_df, **kwargs)
-    turb_df_cohfile = gen_turb(spat_df, coh_file=coh_file, **kwargs)
-    # then
-    pd.testing.assert_frame_equal(turb_df_orig, turb_df_cohfile)
+    for nf_chunk in [1, 2, 5, 6]:
+        t, freq = get_freq(**kwargs)
+        turb_df_orig = gen_turb(spat_df, **kwargs)
+        generate_coherence_file(freq, spat_df, coh_file, **kwargs)
+        turb_df_cohfile = gen_turb(spat_df, coh_file=coh_file, **kwargs)
+        # then
+        pd.testing.assert_frame_equal(turb_df_orig, turb_df_cohfile)
 
 
 if __name__ == '__main__':

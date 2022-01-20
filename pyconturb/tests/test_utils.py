@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 """test util functions
 """
-import os
-
 import numpy as np
 import pandas as pd
 import pytest

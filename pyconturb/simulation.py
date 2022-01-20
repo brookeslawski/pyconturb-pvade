@@ -17,7 +17,8 @@ from pyconturb.sig_models import iec_sig, data_sig
 from pyconturb.spectral_models import kaimal_spectrum, data_spectrum
 from pyconturb.wind_profiles import get_wsp_values, power_profile, data_profile
 from pyconturb._utils import (combine_spat_con, _spat_rownames, _DEF_KWARGS,
-                              clean_turb, check_sims_collocated, get_freq, message)
+                              clean_turb, check_sims_collocated, get_freq, get_chunk_idcs,
+                              message)
 
 
 def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec', coh_file=None,
@@ -161,9 +162,11 @@ def gen_turb(spat_df, T=600, nt=600, con_tc=None, coh_model='iec', coh_file=None
             i_chunk = i_f // nf_chunk  # calculate chunk number
             if (i_f - 1) % nf_chunk == 0:  # genr cohrnc chunk when needed
                 message(f'  Processing chunk {i_chunk + 1} / {n_chunks}', verbose)
-                chunk_coh_mat = get_coh_mat(freq[i_chunk*nf_chunk:(i_chunk + 1)*nf_chunk],
-                                            spat_df, coh_model=coh_model,
-                                            dtype=dtype, coh_file=coh_file, **kwargs)
+                
+                chunk_idcs = get_chunk_idcs(freq, i_chunk, nf_chunk)
+                chunk_coh_mat = get_coh_mat(freq, spat_df, coh_model=coh_model,
+                                            chunk_idcs=chunk_idcs, dtype=dtype,
+                                            coh_file=coh_file, **kwargs)
 
             # coherence array for this frequency
             coh_mat = chunk_coh_mat[i_f % nf_chunk]  # ns x ns
