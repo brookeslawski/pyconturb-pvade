@@ -91,7 +91,7 @@ def test_save_load_coherence_nocon(tmp_path):
     for nf_chunk in range(1, len(freq)+1):
         kwargs['nf_chunk'] = nf_chunk
         # when
-        generate_coherence_file(freq, spat_df, coh_file, **kwargs)
+        generate_coherence_file(spat_df, coh_file, freq=freq, **kwargs)
         coh_theo = calculate_coh_mat(freq, spat_df, **kwargs)
         coh_mat = load_coh_mat(coh_file, freq)
         

@@ -8,7 +8,8 @@ import h5py
 import numpy as np
 from scipy.linalg import cholesky
 
-from pyconturb._utils import check_chunk_idcs, combine_spat_con, get_chunk_idcs, message
+from pyconturb._utils import (check_chunk_idcs, combine_spat_con, get_chunk_idcs,
+                              get_freq, message)
 
 
 _HDF5_DSNAME = 'coherence'  # dataset name for HDF5 coherence files
@@ -95,16 +96,12 @@ def chunker(iterable, nPerChunks):
        yield chunk
 
 
-def generate_coherence_file(freq, spat_df, coh_file, con_tc=None, coh_model='iec',
+def generate_coherence_file(spat_df, coh_file, freq=None, con_tc=None, coh_model='iec',
                             nf_chunk=1, dtype=np.float64, verbose=False, **kwargs):
     """Calculate a coherence matrix and save it to an HDF5 file for later reuse.
 
     Parameters
     ----------
-    freq : array-like
-        [Hz] Full frequency vector for coherence calculations. Option to calculate 
-        coherence for a subset using ``chunk_idcs`` keyword argument. Dimension is
-        ``(n_f,)``.
     spat_df : pandas.DataFrame
         Spatial information on the points to simulate. Must have rows ``[k, x, y, z]``,
         and each of the ``n_sp`` columns corresponds to a different spatial location and
@@ -117,6 +114,10 @@ def generate_coherence_file(freq, spat_df, coh_file, con_tc=None, coh_model='iec
         Optional constraining data for the simulation. The TimeConstraint object is built
         into PyConTurb; see documentation for more details. Default is none (no 
         constaint). Containts ``n_c`` columns, one for each constraint location.
+    freq : array-like, optional
+        [Hz] Full frequency vector for coherence calculations if con_tc not given. 
+        Option to only calculate coherence for a subset of ``freq`` using ``chunk_idcs``
+        keyword argument. Dimension of ``freq`` is is ``(n_f,)``.
     coh_model : str, optional
         Spatial coherence model specifier. Default is "iec" (IEC 61400-1, Ed. 4).
     dtype : data type, optional
@@ -137,6 +138,13 @@ def generate_coherence_file(freq, spat_df, coh_file, con_tc=None, coh_model='iec
     coh_mat : numpy.ndarray
         Generated coherence matrix. Dimension is ``(n_fchunk, n_sp, n_sp)``.
     """
+    
+    # get freq from con_tc if not given
+    if freq is None:
+        if con_tc is None:
+            raise ValueError('Must given either "freq" or "con_tc" keyword argument!')
+        freq = get_freq(T=con_tc.get_T(), nt=con_tc.get_nt())[1]
+        
 
     # sizes of arrays
     n_sp = spat_df.shape[1]  # points to simulate

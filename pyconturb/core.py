@@ -35,6 +35,11 @@ class TimeConstraint(DataFrame):
     copy : boolean, default False
         Copy data from inputs. Only affects DataFrame / 2d ndarray input
     """
+
+    def get_nt(self):
+        """Return the numer of time steps in constraining data"""
+        return self.get_time().shape[0]
+
     def get_spat(self):
         """Return a DataFrame with the spatial information"""
         return self[self.index.map(lambda x: type(x) is str)]

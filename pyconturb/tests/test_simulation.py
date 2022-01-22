@@ -213,7 +213,7 @@ def test_gen_turb_same_coh_file(tmp_path):
     for nf_chunk in [1, 2, 5, 6]:
         t, freq = get_freq(**kwargs)
         turb_df_orig = gen_turb(spat_df, **kwargs)
-        generate_coherence_file(freq, spat_df, coh_file, **kwargs)
+        generate_coherence_file(spat_df, coh_file, freq=freq, **kwargs)
         turb_df_cohfile = gen_turb(spat_df, coh_file=coh_file, **kwargs)
         # then
         pd.testing.assert_frame_equal(turb_df_orig, turb_df_cohfile)
