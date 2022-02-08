@@ -10,23 +10,22 @@ from pyconturb.io import df_to_h2turb, h2turb_to_df, df_to_bts, bts_to_df
 from pyconturb._utils import gen_spat_grid
 
 
-def test_pctdf_to_h2turb():
+def test_pctdf_to_h2turb(tmp_path):
     """save PyConTurb dataframe as HAWC2 binary file and load again"""
     # given
-    path = '.'
     z = np.array([50, 70, 80])
     spat_df = gen_spat_grid(0, z)
     nt, dt = 100, 0.2
     t = np.arange(nt) * dt
-    turb_df = pd.DataFrame(np.random.rand(nt, 3*z.size),
-                           index=t,
-                           columns=[f'{c}_p{i}' for i in range(z.size) for c in 'uvw'])
-    # when
-    df_to_h2turb(turb_df, spat_df, '.')
-    test_df = h2turb_to_df(spat_df, path, nt=nt, dt=dt)
-    [os.remove(os.path.join('.', f'{c}.bin')) for c in 'uvw']
-    # then
-    pd.testing.assert_frame_equal(turb_df, test_df, check_dtype=False)
+    for dtype in [np.float32, np.float64]:
+        turb_df = pd.DataFrame(np.random.rand(nt, 3*z.size),
+                               index=t, dtype=dtype,
+                               columns=[f'{c}_p{i}' for i in range(z.size) for c in 'uvw'])
+        # when
+        df_to_h2turb(turb_df, spat_df, tmp_path)
+        test_df = h2turb_to_df(spat_df, tmp_path, nt=nt, dt=dt)
+        # then
+        pd.testing.assert_frame_equal(turb_df, test_df, check_dtype=False)
 
 
 def test_pctdf_to_bts():
@@ -51,17 +50,16 @@ def test_pctdf_to_bts():
                                            rtol=np.inf)  # just look at abs tol
 
 
-def test_pctdf_to_bts_const():
+def test_pctdf_to_bts_const(tmp_path):
     """check if signals are constant"""
     # given
-    path = 'garbage.bts'
+    path = str(tmp_path / 'garbage.bts')
     spat_df = gen_spat_grid(0, [50, 70])
     turb_df = pd.DataFrame(np.ones((100, 6)),
                            columns=[f'{c}_p{i}' for i in range(2) for c in 'uvw'])
     # when
     df_to_bts(turb_df, spat_df, path, uzhub=None)
     test_df = bts_to_df(path)
-    os.remove('./garbage.bts')
     # then
     for c in 'uvw':  # pandas won't ignore column order, so use numpy instead
         turb_c_df = turb_df.filter(regex=f'{c}_')

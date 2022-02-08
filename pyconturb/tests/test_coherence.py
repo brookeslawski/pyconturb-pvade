@@ -17,7 +17,7 @@ from pyconturb.core import TimeConstraint
 from pyconturb.simulation import gen_turb
 from pyconturb.coherence import (calculate_coh_mat, generate_coherence_file, get_coh_mat,
                                  load_coh_mat)
-from pyconturb._utils import gen_spat_grid, _spat_rownames
+from pyconturb._utils import gen_spat_grid, _spat_rownames, get_freq
 
 
 # ========================== tests for get_coh_mat ==========================
@@ -74,7 +74,7 @@ def test_get_coh_mat_con():
 
 
 def test_save_load_coherence_nocon(tmp_path):
-    """Save coherence to file and reload (no constraint). Keep nf_chunk > 1. Tests:
+    """Save coherence to file and reload (no constraint).Tests:
         generate_coherence_file
         calculate_coh_mat
         load_coh_mat
@@ -86,17 +86,41 @@ def test_save_load_coherence_nocon(tmp_path):
                             [0, 0, 0, 0, 0, 0],
                             [0, 0, 0, 1, 1, 1]],
                            index=_spat_rownames)
-    freq, u_ref, l_c = [0.5, 1, 1.5, 2.0, 2.5], 2, 240.3
+    freq, u_ref, l_c = [0.5, 1, 1.5, 2.0, 2.5], 2, 340.2
     kwargs = {'ed': 3, 'u_ref': u_ref, 'l_c': l_c, 'dtype': np.float32}
     for nf_chunk in range(1, len(freq)+1):
         kwargs['nf_chunk'] = nf_chunk
         # when
         generate_coherence_file(spat_df, coh_file, freq=freq, **kwargs)
         coh_theo = calculate_coh_mat(freq, spat_df, **kwargs)
-        coh_mat = load_coh_mat(coh_file, freq)
+        coh_mat = load_coh_mat(coh_file, freq=freq)
         
         # then
         np.testing.assert_array_almost_equal(coh_theo, coh_mat)
+
+
+def test_save_load_coherence_con(tmp_path):
+    """Save coherence to file and reload with constraint).
+    """
+    # given -- constraining points
+    con_spat_df = pd.DataFrame([[0, 0, 0, 71]], columns=_spat_rownames).T
+    kwargs = {'u_ref': 10, 'turb_class': 'B', 'l_c': 340.2, 'z_ref': 70, 'T': 300,
+              'nt': 600, 'seed': 1337, 'coh_model': 'iec', 'dtype': np.float32,
+              'nf_chunk': 10}
+    con_turb_df = gen_turb(con_spat_df, **kwargs)
+    con_tc = TimeConstraint().from_con_data(con_spat_df=con_spat_df.T,
+                                            con_turb_df=con_turb_df)  # old spat_df was T
+    # given
+    coh_file = tmp_path / 'test.h5'
+    y, z = 0, [70, 72]
+    spat_df = gen_spat_grid(y, z)
+    # when
+    generate_coherence_file(spat_df, coh_file, con_tc=con_tc, **kwargs)
+    coh_mat = load_coh_mat(coh_file)
+    nf_theo = get_freq(T=con_tc.get_T(), nt=con_tc.get_nt())[1].size
+    ns_theo = con_tc.shape[1] + spat_df.shape[1]
+    # then
+    assert coh_mat.shape == (nf_theo, ns_theo, ns_theo)
 
 
 # ========================== tests for get_iec_coh_mat ==========================
