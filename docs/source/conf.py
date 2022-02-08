@@ -20,6 +20,9 @@ sys.path.insert(0, os.path.join(os.path.abspath('.'), '..', '..'))  # repo
 from pyconturb._version import __version__
 
 
+nbsphinx_allow_errors = False  # set true on update_docs branch for debugging
+
+
 # -- Project information -----------------------------------------------------
 
 project = 'PyConTurb'

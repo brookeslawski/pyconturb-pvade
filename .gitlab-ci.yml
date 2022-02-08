@@ -14,7 +14,7 @@ test_pyconturb:  # name the job what we like
 
 # ===== build documentation =====
 pages:  # "pages" is a job specifically for GitLab pages [1]
-  image: rinkdtu/dockermini:latest
+  image: python:3.9
   stage:  # build, test, deploy defined by default [2]
     deploy
   before_script:  # make sure make and pandoc are installed
