@@ -169,7 +169,7 @@ def df_to_h2turb(turb_df, spat_df, path, prefix=''):
 
 
 def h2turb_to_arr(spat_df, path):
-    """Raw-load a hawc2 turbulent binary file to numeric array"""
+    """Raw-load a hawc2 turbulent binary file to float-64 numeric array"""
     ny, nz = pd.unique(spat_df.loc['y']).size, pd.unique(spat_df.loc['z']).size
     bin_arr = np.fromfile(path, dtype=np.dtype(_HAWC2_BIN_FMT))
     nx = bin_arr.size // (ny * nz)
@@ -180,7 +180,7 @@ def h2turb_to_arr(spat_df, path):
 
 
 def h2turb_to_df(spat_df, path, nt=600, dt=1, prefix=''):
-    """load a hawc2 binary file into a pandas datafram with transform to uvw"""
+    """load a hawc2 binary file into a float-64 pandas datafram with transform to uvw"""
     t = np.arange(nt) * dt
     turb_df = pd.DataFrame(index=t)
     for c in 'uvw':
