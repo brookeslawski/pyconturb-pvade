@@ -303,7 +303,7 @@ def get_iec3d_cor_mat(freq, spat_df, dtype=np.float64, **kwargs):
     return cor_mat
 
 
-def load_coh_mat(coh_file, freq, chunk_idcs=None):
+def load_coh_mat(coh_file, freq=None, chunk_idcs=None):
     """Load all or part of a coherence matrix from an HDF5 file.
     
     Parameters
@@ -312,10 +312,11 @@ def load_coh_mat(coh_file, freq, chunk_idcs=None):
         Path to file from which to load coherence. Assumed to be an HDF5 file with
         dataset "coherence" containing a 2D coherence array with dimensions 
         ``(n_f, n_sp^2)``.
-    freq : array-like
-        [Hz] Full frequency vector for coherence calculations. Option to calculate 
-        coherence for a subset using `chunk_idcs` keyword argument. Dimension is
-        ``(n_f,)``.
+    freq : array-like, optional
+        [Hz] Full frequency vector that was used in coherence calculations. Omitting
+        ``freq`` means load the entire dataset. Option to load a subset of the coherence
+        matrix using `chunk_idcs` keyword argument (indexes along frequency). 
+        Dimension is ``(n_f,)``.
     chunk_idcs : int or numpy.array
         Indices of `freq` for which coherence should be calculated or loaded. Dimension
         is ``(n_fchunk,)`` if given. Default is None (get all frequencies in `freq`).
@@ -327,12 +328,18 @@ def load_coh_mat(coh_file, freq, chunk_idcs=None):
         Generated coherence matrix. Dimension is ``(n_fchunk, n_sp, n_sp)``.
     """
     
-    # update chunk_idcs if not given
-    chunk_idcs = check_chunk_idcs(freq, chunk_idcs)
-    
-    # load the slice from memory
-    with h5py.File(coh_file, 'r') as hf:
-        coh_mat_2d = hf[_HDF5_DSNAME][chunk_idcs, :]
+    # load everything if freq not given
+    if freq is None:
+        with h5py.File(coh_file, 'r') as hf:
+            coh_mat_2d = hf[_HDF5_DSNAME][:, :]
+        
+    else:
+        # update chunk_idcs if not given
+        chunk_idcs = check_chunk_idcs(freq, chunk_idcs)
+        
+        # load the slice from memory
+        with h5py.File(coh_file, 'r') as hf:
+            coh_mat_2d = hf[_HDF5_DSNAME][chunk_idcs, :]
     
     ns = np.sqrt(coh_mat_2d.shape[1]).astype(int)
     
