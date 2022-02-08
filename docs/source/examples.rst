@@ -28,3 +28,4 @@ The notebooks are located in ``docs/source/notebooks`` in the repository.
     notebooks/4_pregenerating_coherence
     notebooks/5_pyconturb_interpolator
     notebooks/6_data_profile_interp
+    notebooks/7_outputs

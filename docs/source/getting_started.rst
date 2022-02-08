@@ -50,32 +50,3 @@ deficit in the y-z plane), you will need to define the appropriate
 ``wsp_func``, ``sig_func`` and/or ``spec_func`` functions. Look at the related
 :ref:`common_functions` sections (namely, :ref:`profiles`, :ref:`sig_models` and
 :ref:`spectral_models`).
-
-Common mistakes
---------------------------------
-
-Here is a non-exhaustive list of common issues when simulating with PyConTurb.
-
-* **Simulating component where there is no constraint**.
-  Because there is no correlation between the three turbulence components
-  (i.e., u is not correlated to v or w), PyConTurb will default to IEC
-  parameters for the components without a constraint. You can get around
-  this default behaviour by defining a custom ``sig_func`` (see examples).
-
-* **Mismatching time steps in constraint and turbulence box**.
-  Due to the constrained-turbulence methodology, PyConTurb requires the time
-  steps of the desired simulated turbulence to match the time steps of the
-  constraining time series.
-
-* **Using `interp_data` without understanding interpolator**.
-  PyConTurb has the option to attempt to interpolate and of the three
-  profile functions from the constraining time series. This option is provided
-  for convenience, but using it without understanding how the interpolator
-  works can produce unexpected results. In general, I recommend fitting
-  custom profile functions to your data manually instead of using the
-  interpolator.
-
-* **Trying to simulate very large boxes**.
-  It is easy to run out of memory if you request a box that is very large. To
-  save memory, you can try setting ``nf_chunks`` to 1 (will slow down simulation)
-  or ``dtype=np.float32``.

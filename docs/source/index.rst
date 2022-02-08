@@ -36,10 +36,9 @@ Contents:
     
         installation
         getting_started
-        research
-        issues
-        developer_corner
-        notebooks/outputs
+        user_guide
         examples
         function_reference
+        research
+        developer_corner
         contributors

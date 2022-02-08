@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Functions related to definition of coherence models
+"""Defining, calculating, and saving/loading spatial coherence values.
 """
 import itertools
 import os
@@ -192,10 +192,10 @@ def get_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.float64,
         [Hz] Full frequency vector for coherence calculations. Option to calculate 
         coherence for a subset using `chunk_idcs` keyword argument. Dimension is
         ``(n_f,)``.
-spat_df : pandas.DataFrame
-    Spatial information on the points to simulate. Must have rows ``[k, x, y, z]``,
-    and each of the ``n_sp`` columns corresponds to a different spatial location and
-    turbine component (u, v or w).
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have rows ``[k, x, y, z]``,
+        and each of the ``n_sp`` columns corresponds to a different spatial location and
+        turbine component (u, v or w).
     con_tc : pyconturb TimeConstraint, optional
         Optional constraining data for the simulation. The TimeConstraint object is built
         into PyConTurb; see documentation for more details. Default is none (no 
