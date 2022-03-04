@@ -80,8 +80,8 @@ def data_profile(spat_df, con_tc=None, warn_datacon=True, **kwargs):
     how to construct a TimeConstraint object.
 
     Note! If a component is requested for which there is no constraint, then this
-    function will try to use the IEC spectra instead. Use the `warn_datacon` option to 
-    disable the warning about this.
+    function will return power profile for u and 0 for v and w. Use the `warn_datacon`
+    option to disable the warning about this.
 
     Parameters
     ----------
@@ -106,18 +106,29 @@ def data_profile(spat_df, con_tc=None, warn_datacon=True, **kwargs):
     """
     if con_tc is None:
         raise ValueError('No data provided!')
-    u_mask = np.isclose(con_tc.loc['k'], 0)  # cols spat_df that correspond to u
-    if not sum(u_mask):
-        if warn_datacon:  # throw warning if requested
-            warnings.warn('Longitudinal wind speed does not exist in constraints! '
-                          + 'Cannot interpolate mean profile. Trying to use power law.',
-                          Warning, stacklevel=2)
-        return power_profile(spat_df, **kwargs)
-    ypts = con_tc.filter(regex='u_').loc['y'].values.astype(float)
-    zpts = con_tc.filter(regex='u_').loc['z'].values.astype(float)
-    vals = con_tc.get_time().filter(regex='u_').mean().values.astype(float)
-    y, z = spat_df.loc[['y', 'z']].values
-    return interpolator((ypts, zpts), vals, (y, z))
+    mean_wsp = np.empty(spat_df.shape[1])  # initialize array of mean wind speeds
+    for ic, c in enumerate('uvw'):
+        mask = np.isclose(con_tc.loc['k'], ic)  # cols con_tc that correspond to u
+        mask_sdf = np.isclose(spat_df.loc['k'], ic)  # cols spat_df that correspond to u
+        comp_spat_df = spat_df.iloc[:, mask_sdf]  # set of spat_df that is component
+        if not sum(mask):
+            if warn_datacon:  # throw warning if requested
+                warnings.warn(f'{c}-wind does not exist in constraints! '
+                              + 'Cannot interpolate mean profile. Trying to use power law.',
+                              Warning, stacklevel=2)
+            if ic:  # v, w: zero
+                mean_wsp[mask_sdf] = constant_profile(comp_spat_df)
+            else:  # u: power profile
+                mean_wsp[mask_sdf] = power_profile(comp_spat_df, **kwargs)
+            continue
+        # yp, zp, and vals to interpolate from
+        ypts = con_tc.filter(regex=c + '_').loc['y'].values.astype(float)
+        zpts = con_tc.filter(regex=c + '_').loc['z'].values.astype(float)
+        vals = con_tc.get_time().filter(regex=c + '_').mean().values.astype(float)
+        # values to interpolate to
+        y, z = comp_spat_df.loc[['y', 'z']].values
+        mean_wsp[mask_sdf] = interpolator((ypts, zpts), vals, (y, z))
+    return mean_wsp
 
 
 def power_profile(spat_df, u_ref=_DEF_KWARGS['u_ref'], z_ref=_DEF_KWARGS['z_ref'],

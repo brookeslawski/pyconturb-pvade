@@ -40,11 +40,11 @@ def test_get_mean_wsp_pwr():
 
 
 def test_power_profile():
-    """Verify power law profile"""
+    """Verify power law profile for all components"""
     # given
     kwargs = {'u_ref': 10, 'z_ref': 90, 'alpha': 0.2}
-    spat_df = gen_spat_grid(0, [50, 90], comps=[0])
-    u_theory = [8.890895361, 10]
+    spat_df = gen_spat_grid(0, [50, 90], comps=[0, 1, 2])
+    u_theory = [8.890895361, 0, 0, 10, 0, 0]
     # when
     wsp_func = power_profile(spat_df, **kwargs)
     # then
@@ -52,10 +52,10 @@ def test_power_profile():
 
 
 def test_constant_profile():
-    """Verify power law profile"""
+    """Verify constant profile for all components"""
     # given
-    spat_df = gen_spat_grid(0, [50, 90], comps=[0])
-    u_theory = [[0, 0], [4, 4]]
+    spat_df = gen_spat_grid(0, [50, 90], comps=[0, 1, 2])
+    u_theory = [[0, 0, 0, 0, 0, 0], [4, 0, 0, 4, 0, 0]]
     kwargs = {'u_ref': 4}
     # when
     wsp_prof_0 = constant_profile(spat_df)
@@ -66,13 +66,17 @@ def test_constant_profile():
 
 
 def test_data_profile():
-    """verify profile interpolated from data"""
+    """verify profile interpolated from data for all components"""
     # given
-    spat_df = gen_spat_grid(0, [40, 70, 100], comps=[0])
-    con_tc = TimeConstraint([[0, 0], [0, 0], [0, 0], [50, 90], [8, 10]],
+    spat_df = gen_spat_grid(0, [40, 70, 100], comps=[0, 1, 2])
+    con_tc = TimeConstraint([[0, 0, 1, 1, 2, 2],  # k
+                             [0, 0, 0, 0, 0, 0],  # x
+                             [0, 0, 0, 0, 0, 0],  # y
+                             [50, 90, 50, 90, 50, 90],  # z
+                             [8, 10, -1, 1, 0, 1]],
                             index=['k', 'x', 'y', 'z', 0.0],
-                            columns=['u_p0', 'u_p1'])
-    u_theo = [8, 9, 10]
+                            columns=['u_p0', 'u_p1', 'v_p0', 'v_p1', 'w_p0', 'w_p1'])
+    u_theo = [8, -1, 0, 9, 0, 0.5, 10, 1, 1]
     # when
     wsp_prof = data_profile(spat_df, con_tc)
     # then
@@ -80,14 +84,15 @@ def test_data_profile():
 
 
 def test_data_profile_nocon():
-    """verify (1) warning is raised with no con in u (2) iec is returned"""
+    """verify (1) warning is raised with no con in u (2) iec is returned for u and 0 for w"""
     # given
     u_ref, z_ref = 10, 70
-    spat_df = gen_spat_grid(0, [40, 70, 100], comps=[0])
+    spat_df = gen_spat_grid(0, [40, 70, 100], comps=[0, 2])
     con_tc = TimeConstraint([[1, 1], [0, 0], [0, 0], [50, 90], [8, 10]],
                             index=['k', 'x', 'y', 'z', 0.0],
                             columns=['v_p0', 'v_p1'])
-    u_theo = 10*(np.array([40, 70, 100])/70)**0.2  # default to iec theory
+    u_theo = np.zeros(6)
+    u_theo[::2] = 10*(np.array([40, 70, 100])/70)**0.2  # default to iec theory
     # when
     with pytest.warns(Warning):
         wsp_prof = data_profile(spat_df, con_tc, u_ref=u_ref, z_ref=z_ref)
