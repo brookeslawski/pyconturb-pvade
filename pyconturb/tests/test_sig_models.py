@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 
 from pyconturb.core import TimeConstraint
-from pyconturb.sig_models import get_sig_values, iec_sig, data_sig
+from pyconturb.sig_models import get_sig_values, iec_sig, data_sig, constant_sig
 from pyconturb._utils import _spat_rownames
 
 
@@ -91,6 +91,25 @@ def test_data_sig_nocon():
     np.testing.assert_allclose(sig_theo, sig_arr)
 
 
+def test_constant_sig_bad_input():
+    """length of comps and sig_vals mismatch, should throw error"""
+    spat_df = pd.DataFrame([[2, 1, 0], [0, 0, 0], [0, 0, 0], [50, 50, 90]], index=_spat_rownames)
+    with pytest.raises(ValueError):
+        constant_sig(spat_df, [1, 2], [0])
+
+
+def test_constant_correct_values():
+    """verify we get correct sig values out of function"""
+    # given
+    comps = [0, 1, 2]
+    spat_df = pd.DataFrame([comps, [0, 0, 0], [0, 0, 0], [50, 50, 90]], index=_spat_rownames)
+    sig_vals_theo = [1, 2, 3]
+    # when
+    sig_vals = constant_sig(spat_df, sig_vals_theo, comps)
+    # then
+    np.testing.assert_array_equal(sig_vals, sig_vals_theo)
+
+
 if __name__ == '__main__':
     test_get_sig_custom()
     test_get_sig_iec()
@@ -98,3 +117,5 @@ if __name__ == '__main__':
     test_iec_sig_value()
     test_data_sig()
     test_data_sig_nocon()
+    test_constant_sig_bad_input()
+    test_constant_correct_values()

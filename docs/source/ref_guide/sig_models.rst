@@ -5,5 +5,5 @@ Turbulence standard deviation
 ------------------------------
 
 .. automodule:: pyconturb.sig_models
-   :members: get_sig_values, iec_sig, data_sig
+   :members: get_sig_values, iec_sig, data_sig, constant_sig
 

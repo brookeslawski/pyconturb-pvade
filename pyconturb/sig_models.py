@@ -43,6 +43,41 @@ def get_sig_values(spat_df, sig_func, **kwargs):
     return sig_func(spat_df, **kwargs)
 
 
+def constant_sig(spat_df, sig_vals, comps, **kwargs):
+    """Constant standard deviation.
+
+    Parameters
+    ----------
+    spat_df : pandas.DataFrame
+        Spatial information on the points to simulate. Must have columns
+        ``[k, p_id, x, y, z]``, and each of the ``n_sp`` rows corresponds
+        to a different spatial location and turbuine component (u, v or
+        w).
+    sig_vals : iterable
+        [m/s] Iterable of standard deviations corresponding to the components
+        in ``comps``.
+    comps : iterable of integers
+        [-] Iterable of the integers ``k`` identifying which components should
+        be assigned the standard deviations in ``sig_vals``. Components u, v,
+        and/or w should be indicated by 0, 1, and/or 2, respectively.
+    **kwargs
+        Unused (optional) keyword arguments.
+
+    Returns
+    -------
+    sig_values : np.array
+        [m/s] Turbulence standard deviation(s) at the specified location(s). Dimension
+        is ``(n_sp,)``.
+    """
+    if len(sig_vals) != len(comps):
+        raise ValueError('Inputs "sig_vals" and "comps" do not have the same length!')
+    k = spat_df.loc[['k']].values.astype(int).squeeze()
+    sig_k = np.empty(spat_df.shape[1])
+    for ki in comps:
+        sig_k[k == ki] = sig_vals[ki]
+    return sig_k
+
+
 def data_sig(spat_df, con_tc=None, warn_datacon=True, **kwargs):
     """Turbulence standard deviation interpolated from a TimeConstraint object.
 

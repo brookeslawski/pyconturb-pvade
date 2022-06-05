@@ -3,4 +3,4 @@
 #                2.5    Fixed bug in custom profiles
 #               2.6     Condata is deprecated.
 #               2.7     Write coherence to file
-__version__ = '2.7.2'
+__version__ = '2.7.3'
