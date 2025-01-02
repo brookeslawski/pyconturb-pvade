@@ -37,8 +37,9 @@ def calculate_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.floa
         Optional constraining data for the simulation. The TimeConstraint object is built
         into PyConTurb; see documentation for more details. Default is none (no 
         constaint). Containts ``n_c`` columns, one for each constraint location.
-    coh_model : str, optional
-        Spatial coherence model specifier. Default is "iec" (IEC 61400-1, Ed. 4).
+    coh_model : str or callable, optional
+        Spatial coherence model specifier or callable of form ``mycoh(icomp, freq, delta_r, **kwargs)``. 
+        Default is "iec" (IEC 61400-1, Ed. 4).
     dtype : data type, optional
         Change precision of calculation (np.float32 or np.float64). Will reduce the 
         storage, and might slightly reduce the computational time. Default is np.float64.
@@ -74,6 +75,9 @@ def calculate_coh_mat(freq, spat_df, con_tc=None, coh_model='iec', dtype=np.floa
     elif coh_model == 'iec3d':  # IEC coherence model, but in u, v, and w
         coh_mat = get_iec3d_cor_mat(freq_chunk, all_spat_df, dtype=dtype,
                                     coh_model=coh_model, **kwargs)
+    elif callable(coh_model):  # custom callable function
+        coh_mat = get_custom_cor_mat(freq_chunk, all_spat_df, coh_model,
+                                     dtype=dtype, **kwargs)
     else:  # unknown coherence model
         raise ValueError(f'Coherence model "{coh_model}" not recognized!')
 
@@ -118,8 +122,9 @@ def generate_coherence_file(spat_df, coh_file, freq=None, con_tc=None, coh_model
         [Hz] Full frequency vector for coherence calculations if con_tc not given. 
         Option to only calculate coherence for a subset of ``freq`` using ``chunk_idcs``
         keyword argument. Dimension of ``freq`` is is ``(n_f,)``.
-    coh_model : str, optional
-        Spatial coherence model specifier. Default is "iec" (IEC 61400-1, Ed. 4).
+    coh_model : str or callable, optional
+        Spatial coherence model specifier or callable of form ``mycoh(icomp, freq, delta_r, **kwargs)``. 
+        Default is "iec" (IEC 61400-1, Ed. 4).
     dtype : data type, optional
         Change precision of calculation (np.float32 or np.float64). Will reduce the 
         storage, and might slightly reduce the computational time. Default is np.float64.
@@ -133,10 +138,10 @@ def generate_coherence_file(spat_df, coh_file, freq=None, con_tc=None, coh_model
         Keyword arguments to pass into ``calculate_coh_mat``.
 
 
-    Returns
-    -------
+    Saves to file
+    --------------
     coh_mat : numpy.ndarray
-        Generated coherence matrix. Dimension is ``(n_fchunk, n_sp, n_sp)``.
+        HDF5 dataset name is "coherence". Dimension is ``(n_fchunk, n_sp, n_sp)``.
     """
     
     # get freq from con_tc if not given
@@ -297,6 +302,31 @@ def get_iec3d_cor_mat(freq, spat_df, dtype=np.float64, **kwargs):
             # calculate distances and coherences
             r = np.sqrt((yz[0, ii] - yz[0, jj])**2 + (yz[1, ii] - yz[1, jj])**2)
             coh_values = np.exp(-12 * np.abs(r) * exp_constant)
+            # Previous method (same math, different numerics)
+            cor_mat[:, ii, jj] = coh_values  # nf x nchunk
+            cor_mat[:, jj, ii] = np.conj(coh_values)
+    return cor_mat
+
+
+def get_custom_cor_mat(freq, spat_df, coh_func, dtype=np.float64, **kwargs):
+    """Create custom correlation matrix. Returns nf x ns x ns.
+    """
+    # preliminaries
+    freq = np.array(freq).reshape(-1, 1)  # nf x 1
+    nf, ns = freq.size, spat_df.shape[1]
+    # intermediate variables
+    yz = spat_df.loc[['y', 'z']].values.astype(float)
+    cor_mat = np.repeat(np.eye((ns), dtype=dtype)[None, :, :], nf, axis=0) # TODO use sparse matrix 
+    for ic in range(3):
+        i_comp = np.arange(ns)[spat_df.iloc[0, :].values == ic]  # Selecting only u-components
+        # loop through number of combinations, nPerChunks at a time to reduce memory impact
+        for ii_jj in chunker(itertools.combinations(i_comp, 2), nPerChunks=10000):
+            # get indices of point-pairs
+            ii = np.array([tup[0] for tup in ii_jj])
+            jj = np.array([tup[1] for tup in ii_jj])
+            # calculate distances and coherences
+            r = np.sqrt((yz[0, ii] - yz[0, jj])**2 + (yz[1, ii] - yz[1, jj])**2)
+            coh_values = coh_func(ic, freq, r, **kwargs)
             # Previous method (same math, different numerics)
             cor_mat[:, ii, jj] = coh_values  # nf x nchunk
             cor_mat[:, jj, ii] = np.conj(coh_values)
