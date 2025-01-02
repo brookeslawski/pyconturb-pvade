@@ -2,6 +2,15 @@
 """Setup file for PyConTurb
 
 See README.md for how to use this file.
+
+In theory, new release should be done on tagged master.
+
+Manual instructions for releasing new version (gitlab CI):  
+    - Make GitLab tag, no message.  
+    - Create release off tag, no title just notes
+    - pip install twine
+    - python setup.py sdist bdist_wheel
+    - twine upload dist/* -u __token__ -p ${PYPI_PCT_TOKEN}
 """
 from os import path
 from setuptools import setup
