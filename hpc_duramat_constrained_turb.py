@@ -11,31 +11,38 @@ from _nb_utils import plot_slice
 import h5py
 import time
 import sys
+import argparse
+import os
 
 # copied from /Users/bstanisl/repos/pyconturb/pyconturb/duramat_constrained_turb.ipynb
 # to run on hpc terminal in hopes that it's faster
+
+# Add argument parsing for casepath
+parser = argparse.ArgumentParser(description="Generate synthetic turbulence and save as h5 file for pvade input")
+parser.add_argument("--gen_csv_fname", required=True, help="Path to the generated turbulence csv.")
+args = parser.parse_args()
+gen_csv_fname = args.gen_csv_fname
 
 start_time = time.time()
 
 # inputs
 save_turb_files_flag = True
-tf = 30.0 # 30.0 #s
+tf = 1.0 #30.0 # 30.0 #s
 dt = 0.02 #s
 parent_dir = '/projects/pvopt/brooke/duramat-validation-turbinflow/pyconturb/pyconturb-pvade/'
-gen_csv_fname = 'generated_DuraMAT_tilt40deg_turbulent_inflow_{}s_{}Hz.csv'.format(int(tf),int(1/dt))
+# gen_csv_fname = 'generated_DuraMAT_tilt40deg_turbulent_inflow_{}s_{}Hz.csv'.format(int(tf),int(1/dt))
 
 # should match dimensions of pvade sim
 y_min = -13.1
 y_max = 13.1
 z_max = 20.0
-l_char = 0.17
-ny = int((y_max-y_min)/l_char)
+
+# for production sims
+# l_char = 0.17
+# ny = int((y_max-y_min)/l_char)
 
 # for testing
-# y_min = -10.0
-# y_max = 10.0
-# z_max = 20.0
-# ny = 80
+ny = 40
 
 # Step 1: generate dataframe of measurement data ----------------------------
 # ---------------------------------------------------------------------------
@@ -148,7 +155,7 @@ if save_turb_files_flag:
     t_steps = con_tc.get_time().index.size
     time_values = con_tc.get_time().index.values.astype(float)
 
-    with h5py.File(h5_filename, "w") as fp:
+    with h5py.File("output/"+h5_filename, "w") as fp:
         fp.create_dataset("time_index", shape=(t_steps,))
         fp["time_index"][:] = time_values
         
