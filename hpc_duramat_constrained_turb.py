@@ -27,7 +27,7 @@ start_time = time.time()
 
 # inputs
 save_turb_files_flag = True
-tf = 1.0 #30.0 # 30.0 #s
+tf = 30.0 # 30.0 #s
 dt = 0.02 #s
 parent_dir = '/projects/pvopt/brooke/duramat-validation-turbinflow/pyconturb/pyconturb-pvade/'
 # gen_csv_fname = 'generated_DuraMAT_tilt40deg_turbulent_inflow_{}s_{}Hz.csv'.format(int(tf),int(1/dt))
@@ -38,11 +38,11 @@ y_max = 13.1
 z_max = 20.0
 
 # for production sims
-# l_char = 0.17
-# ny = int((y_max-y_min)/l_char)
+l_char = 0.17
+ny = int((y_max-y_min)/l_char)
 
 # for testing
-ny = 40
+# ny = 40
 
 # Step 1: generate dataframe of measurement data ----------------------------
 # ---------------------------------------------------------------------------
