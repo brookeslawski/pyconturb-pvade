@@ -21,6 +21,7 @@ start_time = time.time()
 save_turb_files_flag = True
 tf = 5.0 # 30.0 #s
 dt = 0.02 #s
+parent_dir = '/projects/pvopt/brooke/duramat-validation-turbinflow/pyconturb/pyconturb-pvade/'
 gen_csv_fname = 'generated_DuraMAT_tilt40deg_turbulent_inflow_{}s_{}Hz.csv'.format(int(tf),int(1/dt))
 
 # should match dimensions of pvade sim
@@ -51,8 +52,8 @@ sonic_spat_df = gen_spat_grid(y_sonic1, z_sonic1)  # if `comps` not passed in, a
 # Step 2: read csv of measurement data --------------------------------------
 # ---------------------------------------------------------------------------
 
-print(f'reading measured data from {gen_csv_fname} to generate con_tc')
-con_tc = TimeConstraint(pd.read_csv(gen_csv_fname, index_col=0))  # load data from csv directly into tc
+print(f'reading measured data from {parent_dir+gen_csv_fname} to generate con_tc')
+con_tc = TimeConstraint(pd.read_csv(parent_dir+gen_csv_fname, index_col=0))  # load data from csv directly into tc
 con_tc.index = con_tc.index.map(lambda x: float(x) if (x not in 'kxyz') else x)  # index cleaning
 # print('con_tc = ', con_tc.iloc[:7, :])  # look at the first 7 rows
 
@@ -167,6 +168,6 @@ if save_turb_files_flag:
     
     print(f'saved turb to h5 file: {h5_filename}')
 
-    end_time = time.time()
-    elapsed_time = end_time - start_time
-    print(f"Elapsed time: {elapsed_time:.4f} seconds")
+end_time = time.time()
+elapsed_time = end_time - start_time
+print(f"Elapsed time: {elapsed_time:.4f} seconds")
